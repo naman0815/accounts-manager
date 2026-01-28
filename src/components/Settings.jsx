@@ -107,20 +107,59 @@ export function Settings({ accounts, onUpdateAccounts, budgets, onUpdateBudgets,
                         <div className="cloud-settings">
                             <p className="hint-text">Connect your Google Sheet backend.</p>
                             <label style={{ display: 'block', marginBottom: '0.5rem', color: '#94a3b8' }}>Web App URL</label>
-                            <input
-                                type="text"
-                                placeholder="https://script.google.com/..."
-                                className="input-base"
-                                defaultValue={localStorage.getItem('am_api_url') || ''}
-                                onChange={(e) => {
-                                    if (e.target.value) {
-                                        localStorage.setItem('am_api_url', e.target.value);
-                                    } else {
-                                        localStorage.removeItem('am_api_url');
-                                    }
-                                }}
-                            />
-                            <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '1rem' }}>
+                            <div className="flex-center" style={{ gap: '0.5rem', marginBottom: '1rem' }}>
+                                <input
+                                    type="text"
+                                    placeholder="https://script.google.com/..."
+                                    className="input-base"
+                                    style={{ flex: 1 }}
+                                    defaultValue={localStorage.getItem('am_api_url') || ''}
+                                    onChange={(e) => {
+                                        if (e.target.value) {
+                                            localStorage.setItem('am_api_url', e.target.value);
+                                        } else {
+                                            localStorage.removeItem('am_api_url');
+                                        }
+                                    }}
+                                />
+                                <button
+                                    className="primary-btn"
+                                    style={{ padding: '0.8rem', minWidth: '80px' }}
+                                    onClick={async (e) => {
+                                        const btn = e.target;
+                                        const originalText = btn.innerText;
+                                        const url = localStorage.getItem('am_api_url');
+
+                                        if (!url) {
+                                            alert("Please enter a URL first.");
+                                            return;
+                                        }
+
+                                        btn.innerText = "Testing...";
+                                        btn.disabled = true;
+
+                                        try {
+                                            // Test with redirect: 'follow'
+                                            const res = await fetch(`${url}?action=getData`, { redirect: 'follow' });
+                                            if (res.ok) {
+                                                const data = await res.json();
+                                                console.log(data);
+                                                alert("✅ Connection Successful! Found " + (data.transactions?.length || 0) + " transactions.");
+                                            } else {
+                                                throw new Error("Status: " + res.status);
+                                            }
+                                        } catch (err) {
+                                            alert("❌ Connection Failed. " + err.message + "\nCheck URL and permissions.");
+                                        } finally {
+                                            btn.innerText = "Test";
+                                            btn.disabled = false;
+                                        }
+                                    }}
+                                >
+                                    Test
+                                </button>
+                            </div>
+                            <p style={{ fontSize: '0.8rem', color: '#64748b' }}>
                                 Paste the Web App URL from your Google Apps Script deployment here.
                                 Providing this URL will switch storage from your device to your Google Sheet.
                             </p>
