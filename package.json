@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://namanganapathi.github.io/accounts-manager",
+  "homepage": "https://naman0815.github.io/accounts-manager",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
