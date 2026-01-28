@@ -71,12 +71,14 @@ export function LoadingScreen() {
                 .loading-screen {
                     position: fixed;
                     inset: 0;
-                    background: rgba(255, 255, 255, 0.9);
-                    backdrop-filter: blur(8px);
+                    background: rgba(255, 255, 255, 0.1); 
+                    backdrop-filter: blur(12px);
+                    -webkit-backdrop-filter: blur(12px);
                     display: flex;
                     justify-content: center;
                     align-items: center;
                     z-index: 9999;
+                    transition: opacity 0.3s ease;
                 }
                 .piggy-wrapper {
                     text-align: center;

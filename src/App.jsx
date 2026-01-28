@@ -22,21 +22,24 @@ function App() {
 
   useEffect(() => {
     const loadData = async () => {
+      const minDelay = new Promise(resolve => setTimeout(resolve, 1500)); // Ensure 1.5s animation
+
       // Parallel fetch for speed
       const [loadedAccounts, loadedTs, loadedBudgets] = await Promise.all([
         StorageService.fetchAccounts(),
         StorageService.fetchTransactions(),
-        StorageService.fetchBudgets()
+        StorageService.fetchBudgets(),
+        minDelay
       ]);
 
-      if (loadedAccounts.length === 0) {
+      if (loadedAccounts && loadedAccounts.length === 0) {
         setShowSetup(true);
-      } else {
+      } else if (loadedAccounts) {
         setAccounts(loadedAccounts);
       }
 
-      setTransactions(loadedTs);
-      setBudgets(loadedBudgets);
+      if (loadedTs) setTransactions(loadedTs);
+      if (loadedBudgets) setBudgets(loadedBudgets);
       setLoading(false);
     };
     loadData();
@@ -108,14 +111,14 @@ function App() {
 
   const monthLabel = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
 
-  if (loading) return <LoadingScreen />;
-
   if (showSetup) {
     return <AccountSetup onComplete={handleSetupComplete} />;
   }
 
   return (
     <div className="app-container">
+      {loading && <LoadingScreen />}
+
       <div className="container">
         <header className="header">
           <h1>Expense Tracker</h1>
