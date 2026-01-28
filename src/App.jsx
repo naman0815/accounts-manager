@@ -6,9 +6,11 @@ import { Stats } from './components/Stats';
 import { AccountSetup } from './components/AccountSetup';
 import { AccountList } from './components/AccountList';
 import { Settings } from './components/Settings';
+import { LoadingScreen } from './components/LoadingScreen';
 import { UserCircle } from 'lucide-react';
 
 function App() {
+  const [loading, setLoading] = useState(true);
   const [transactions, setTransactions] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [budgets, setBudgets] = useState({});
@@ -20,18 +22,22 @@ function App() {
 
   useEffect(() => {
     const loadData = async () => {
-      const loadedAccounts = await StorageService.fetchAccounts();
+      // Parallel fetch for speed
+      const [loadedAccounts, loadedTs, loadedBudgets] = await Promise.all([
+        StorageService.fetchAccounts(),
+        StorageService.fetchTransactions(),
+        StorageService.fetchBudgets()
+      ]);
+
       if (loadedAccounts.length === 0) {
         setShowSetup(true);
       } else {
         setAccounts(loadedAccounts);
       }
 
-      const loadedTs = await StorageService.fetchTransactions();
       setTransactions(loadedTs);
-
-      const loadedBudgets = await StorageService.fetchBudgets();
       setBudgets(loadedBudgets);
+      setLoading(false);
     };
     loadData();
   }, []);
@@ -101,6 +107,8 @@ function App() {
     .reduce((acc, t) => acc + t.amount, 0);
 
   const monthLabel = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+
+  if (loading) return <LoadingScreen />;
 
   if (showSetup) {
     return <AccountSetup onComplete={handleSetupComplete} />;
