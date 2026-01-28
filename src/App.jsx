@@ -22,7 +22,7 @@ function App() {
 
   useEffect(() => {
     const loadData = async () => {
-      const minDelay = new Promise(resolve => setTimeout(resolve, 1500)); // Ensure 1.5s animation
+      const minDelay = new Promise(resolve => setTimeout(resolve, 2500)); // Match 2.5s animation
 
       // Parallel fetch for speed
       const [loadedAccounts, loadedTs, loadedBudgets] = await Promise.all([
