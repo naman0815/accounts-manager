@@ -20,14 +20,29 @@ export const StorageService = {
         const apiUrl = StorageService.getApiUrl();
         if (apiUrl) {
             try {
-                const response = await fetch(`${apiUrl}?action=getData`);
+                // Apps Script Web Apps redirect (302) to googleusercontent.com
+                // We must permit these redirects.
+                const response = await fetch(`${apiUrl}?action=getData`, {
+                    method: 'GET',
+                    redirect: 'follow'
+                });
+
+                if (!response.ok) {
+                    console.error("Cloud Error", response.status, await response.text());
+                    return [];
+                }
+
                 const data = await response.json();
+                console.log("Cloud Data Fetched:", data);
                 return data.transactions || [];
             } catch (e) {
                 console.error("Cloud fetch failed", e);
+                // Allow fallback or return empty? Let's return empty to avoid overwriting cloud with stale local
                 return [];
             }
         }
+
+        // ... local fallback ...
 
         // Local Fallback
         try {
@@ -50,7 +65,8 @@ export const StorageService = {
         if (apiUrl) {
             await fetch(apiUrl, {
                 method: 'POST',
-                body: JSON.stringify({ action: 'saveTransaction', payload: transaction })
+                body: JSON.stringify({ action: 'saveTransaction', payload: transaction }),
+                redirect: 'follow'
             });
             return await StorageService.fetchTransactions();
         }
@@ -80,7 +96,8 @@ export const StorageService = {
         if (apiUrl) {
             await fetch(apiUrl, {
                 method: 'POST',
-                body: JSON.stringify({ action: 'deleteTransaction', id })
+                body: JSON.stringify({ action: 'deleteTransaction', id }),
+                redirect: 'follow'
             });
             return await StorageService.fetchTransactions();
         }
@@ -112,7 +129,7 @@ export const StorageService = {
         const apiUrl = StorageService.getApiUrl();
         if (apiUrl) {
             try {
-                const response = await fetch(`${apiUrl}?action=getData`);
+                const response = await fetch(`${apiUrl}?action=getData`, { redirect: 'follow' });
                 const data = await response.json();
                 return data.accounts || [];
             } catch (e) { return []; }
@@ -129,7 +146,8 @@ export const StorageService = {
         if (apiUrl) {
             await fetch(apiUrl, {
                 method: 'POST',
-                body: JSON.stringify({ action: 'saveAccounts', payload: accounts })
+                body: JSON.stringify({ action: 'saveAccounts', payload: accounts }),
+                redirect: 'follow'
             });
             return accounts;
         }
@@ -144,7 +162,7 @@ export const StorageService = {
         const apiUrl = StorageService.getApiUrl();
         if (apiUrl) {
             try {
-                const response = await fetch(`${apiUrl}?action=getData`);
+                const response = await fetch(`${apiUrl}?action=getData`, { redirect: 'follow' });
                 const data = await response.json();
                 return data.budgets || {};
             } catch (e) { return {}; }
@@ -161,7 +179,8 @@ export const StorageService = {
         if (apiUrl) {
             await fetch(apiUrl, {
                 method: 'POST',
-                body: JSON.stringify({ action: 'saveBudgets', payload: budgets })
+                body: JSON.stringify({ action: 'saveBudgets', payload: budgets }),
+                redirect: 'follow'
             });
             return budgets;
         }

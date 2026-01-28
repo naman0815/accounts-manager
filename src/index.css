@@ -56,6 +56,7 @@ button {
 }
 
 /* Utilities */
+/* Utilities */
 .glass-panel {
   background: var(--glass-bg);
   backdrop-filter: blur(12px);
@@ -74,7 +75,41 @@ button {
 .container {
   max-width: 600px;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: 1rem 0.8rem;
+  /* Reduced padding for mobile */
+}
+
+/* Mobile Optimizations */
+@media (max-width: 480px) {
+  .header h1 {
+    font-size: 1.5rem;
+  }
+
+  .summary-card {
+    padding: 1.5rem 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .summary-card .total-amount {
+    font-size: 2.8rem;
+  }
+
+  .accounts-grid {
+    grid-template-columns: repeat(2, 1fr);
+    /* Force 2 columns */
+    gap: 0.8rem;
+  }
+
+  /* Make touch targets bigger */
+  .btn-icon,
+  .month-nav,
+  .primary-btn {
+    min-height: 44px;
+  }
+
+  .transaction-item {
+    padding: 0.8rem;
+  }
 }
 
 /* App Specifics */
