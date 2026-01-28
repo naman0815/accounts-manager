@@ -19,12 +19,13 @@ export const StorageService = {
     fetchTransactions: async () => {
         const apiUrl = StorageService.getApiUrl();
         if (apiUrl) {
+            console.log("Cloud Fetching from:", apiUrl);
             try {
                 // Apps Script Web Apps redirect (302) to googleusercontent.com
-                // We must permit these redirects.
                 const response = await fetch(`${apiUrl}?action=getData`, {
                     method: 'GET',
-                    redirect: 'follow'
+                    redirect: 'follow',
+                    mode: 'cors'
                 });
 
                 if (!response.ok) {
@@ -37,19 +38,16 @@ export const StorageService = {
                 return data.transactions || [];
             } catch (e) {
                 console.error("Cloud fetch failed", e);
-                // Allow fallback or return empty? Let's return empty to avoid overwriting cloud with stale local
+                console.error("Attempted URL:", `${apiUrl}?action=getData`);
                 return [];
             }
         }
 
         // ... local fallback ...
-
-        // Local Fallback
         try {
             const data = localStorage.getItem(STORAGE_KEY);
             return data ? JSON.parse(data) : [];
         } catch (e) {
-            console.error('Failed to load transactions', e);
             return [];
         }
     },
@@ -63,12 +61,19 @@ export const StorageService = {
         }
 
         if (apiUrl) {
-            await fetch(apiUrl, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'saveTransaction', payload: transaction }),
-                redirect: 'follow'
-            });
-            return await StorageService.fetchTransactions();
+            console.log("Saving to Cloud:", transaction);
+            try {
+                await fetch(apiUrl, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'saveTransaction', payload: transaction }),
+                    headers: { 'Content-Type': 'text/plain' },
+                    redirect: 'follow',
+                    mode: 'cors'
+                });
+                return await StorageService.fetchTransactions();
+            } catch (e) {
+                console.error("Cloud Save Failed", e);
+            }
         }
 
         // Local Implementation
@@ -78,15 +83,7 @@ export const StorageService = {
 
         // Update Account Balance Locally
         if (transaction.accountId) {
-            let accounts = await StorageService.fetchAccounts();
-            const accountIndex = accounts.findIndex(a => a.id === transaction.accountId);
-            if (accountIndex >= 0) {
-                const account = accounts[accountIndex];
-                if (transaction.type === 'income') account.balance += transaction.amount;
-                else account.balance -= transaction.amount;
-                accounts[accountIndex] = account;
-                await StorageService.saveAccounts(accounts);
-            }
+            await StorageService.updateLocalBalance(transaction, 'add');
         }
         return updatedTs;
     },
@@ -94,12 +91,16 @@ export const StorageService = {
     deleteTransaction: async (id) => {
         const apiUrl = StorageService.getApiUrl();
         if (apiUrl) {
-            await fetch(apiUrl, {
-                method: 'POST',
-                body: JSON.stringify({ action: 'deleteTransaction', id }),
-                redirect: 'follow'
-            });
-            return await StorageService.fetchTransactions();
+            try {
+                await fetch(apiUrl, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'deleteTransaction', id }),
+                    headers: { 'Content-Type': 'text/plain' },
+                    redirect: 'follow',
+                    mode: 'cors'
+                });
+                return await StorageService.fetchTransactions();
+            } catch (e) { console.error("Cloud Delete Failed", e); }
         }
 
         // Local Implementation
@@ -109,16 +110,8 @@ export const StorageService = {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 
         // Revert Account Balance
-        if (transactionToDelete && transactionToDelete.accountId) {
-            let accounts = await StorageService.fetchAccounts();
-            const accountIndex = accounts.findIndex(a => a.id === transactionToDelete.accountId);
-            if (accountIndex >= 0) {
-                const account = accounts[accountIndex];
-                if (transactionToDelete.type === 'income') account.balance -= transactionToDelete.amount;
-                else account.balance += transactionToDelete.amount;
-                accounts[accountIndex] = account;
-                await StorageService.saveAccounts(accounts);
-            }
+        if (transactionToDelete) {
+            await StorageService.updateLocalBalance(transactionToDelete, 'remove');
         }
         return updated;
     },
@@ -129,10 +122,14 @@ export const StorageService = {
         const apiUrl = StorageService.getApiUrl();
         if (apiUrl) {
             try {
-                const response = await fetch(`${apiUrl}?action=getData`, { redirect: 'follow' });
+                const response = await fetch(`${apiUrl}?action=getData`, { redirect: 'follow', mode: 'cors' });
+                if (!response.ok) throw new Error("Status " + response.status);
                 const data = await response.json();
                 return data.accounts || [];
-            } catch (e) { return []; }
+            } catch (e) {
+                console.error("Account Fetch Failed", e);
+                return [];
+            }
         }
 
         try {
@@ -147,7 +144,9 @@ export const StorageService = {
             await fetch(apiUrl, {
                 method: 'POST',
                 body: JSON.stringify({ action: 'saveAccounts', payload: accounts }),
-                redirect: 'follow'
+                headers: { 'Content-Type': 'text/plain' },
+                redirect: 'follow',
+                mode: 'cors'
             });
             return accounts;
         }
@@ -162,7 +161,7 @@ export const StorageService = {
         const apiUrl = StorageService.getApiUrl();
         if (apiUrl) {
             try {
-                const response = await fetch(`${apiUrl}?action=getData`, { redirect: 'follow' });
+                const response = await fetch(`${apiUrl}?action=getData`, { redirect: 'follow', mode: 'cors' });
                 const data = await response.json();
                 return data.budgets || {};
             } catch (e) { return {}; }
@@ -180,13 +179,36 @@ export const StorageService = {
             await fetch(apiUrl, {
                 method: 'POST',
                 body: JSON.stringify({ action: 'saveBudgets', payload: budgets }),
-                redirect: 'follow'
+                headers: { 'Content-Type': 'text/plain' },
+                redirect: 'follow',
+                mode: 'cors'
             });
             return budgets;
         }
 
         localStorage.setItem(BUDGETS_KEY, JSON.stringify(budgets));
         return budgets;
+    },
+
+    // --- Helpers ---
+
+    updateLocalBalance: async (transaction, mode) => {
+        if (!transaction.accountId) return;
+
+        let accounts = await StorageService.fetchAccounts();
+        const accountIndex = accounts.findIndex(a => a.id === transaction.accountId);
+        if (accountIndex >= 0) {
+            const account = accounts[accountIndex];
+            if (mode === 'add') {
+                if (transaction.type === 'income') account.balance += transaction.amount;
+                else account.balance -= transaction.amount;
+            } else {
+                if (transaction.type === 'income') account.balance -= transaction.amount;
+                else account.balance += transaction.amount;
+            }
+            accounts[accountIndex] = account;
+            await StorageService.saveAccounts(accounts);
+        }
     },
 
     // --- Import/Export ---

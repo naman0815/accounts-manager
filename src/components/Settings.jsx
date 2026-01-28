@@ -27,6 +27,15 @@ export function Settings({ accounts, onUpdateAccounts, budgets, onUpdateBudgets,
         onUpdateAccounts(updated);
     };
 
+    const handleUrlChange = (e) => {
+        const url = e.target.value.trim();
+        if (url) {
+            localStorage.setItem('am_api_url', url);
+        } else {
+            localStorage.removeItem('am_api_url');
+        }
+    };
+
     return (
         <div className="modal-overlay">
             <div className="glass-panel modal-content settings-modal">
@@ -107,27 +116,21 @@ export function Settings({ accounts, onUpdateAccounts, budgets, onUpdateBudgets,
                         <div className="cloud-settings">
                             <p className="hint-text">Connect your Google Sheet backend.</p>
                             <label style={{ display: 'block', marginBottom: '0.5rem', color: '#94a3b8' }}>Web App URL</label>
-                            <div className="flex-center" style={{ gap: '0.5rem', marginBottom: '1rem' }}>
+
+                            <div className="flex-center" style={{ gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
                                 <input
                                     type="text"
                                     placeholder="https://script.google.com/..."
                                     className="input-base"
-                                    style={{ flex: 1 }}
+                                    style={{ flex: 1, minWidth: '200px' }}
                                     defaultValue={localStorage.getItem('am_api_url') || ''}
-                                    onChange={(e) => {
-                                        if (e.target.value) {
-                                            localStorage.setItem('am_api_url', e.target.value);
-                                        } else {
-                                            localStorage.removeItem('am_api_url');
-                                        }
-                                    }}
+                                    onChange={handleUrlChange}
                                 />
                                 <button
                                     className="primary-btn"
                                     style={{ padding: '0.8rem', minWidth: '80px' }}
                                     onClick={async (e) => {
                                         const btn = e.target;
-                                        const originalText = btn.innerText;
                                         const url = localStorage.getItem('am_api_url');
 
                                         if (!url) {
@@ -135,21 +138,26 @@ export function Settings({ accounts, onUpdateAccounts, budgets, onUpdateBudgets,
                                             return;
                                         }
 
+                                        if (url.includes('/edit')) {
+                                            alert("⚠️ Incorrect URL Format!\n\nYou pasted the Editor URL (ends in /edit).\nYou need the Web App URL (ends in /exec).\n\nGo to Deploy > Manage Deployments > Web App URL.");
+                                            return;
+                                        }
+
                                         btn.innerText = "Testing...";
                                         btn.disabled = true;
 
                                         try {
-                                            // Test with redirect: 'follow'
-                                            const res = await fetch(`${url}?action=getData`, { redirect: 'follow' });
+                                            const res = await fetch(`${url}?action=getData`, { redirect: 'follow', mode: 'cors' });
                                             if (res.ok) {
                                                 const data = await res.json();
                                                 console.log(data);
-                                                alert("✅ Connection Successful! Found " + (data.transactions?.length || 0) + " transactions.");
+                                                alert("✅ Connection Successful!\nFound " + (data.transactions?.length || 0) + " transactions.");
                                             } else {
-                                                throw new Error("Status: " + res.status);
+                                                throw new Error("HTTP " + res.status);
                                             }
                                         } catch (err) {
-                                            alert("❌ Connection Failed. " + err.message + "\nCheck URL and permissions.");
+                                            console.error(err);
+                                            alert("❌ Connection Failed.\n" + err.message + "\n\n1. Check URL ends in /exec\n2. Check permission is 'Anyone'");
                                         } finally {
                                             btn.innerText = "Test";
                                             btn.disabled = false;
@@ -159,9 +167,10 @@ export function Settings({ accounts, onUpdateAccounts, budgets, onUpdateBudgets,
                                     Test
                                 </button>
                             </div>
+
                             <p style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                                Paste the Web App URL from your Google Apps Script deployment here.
-                                Providing this URL will switch storage from your device to your Google Sheet.
+                                Paste the <strong>Web App URL</strong> from your Google Apps Script deployment.
+                                It must end in <code>/exec</code>.
                             </p>
                         </div>
                     )}
