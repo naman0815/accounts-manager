@@ -18,6 +18,8 @@ export const StorageService = {
 
     fetchTransactions: async () => {
         const apiUrl = StorageService.getApiUrl();
+        const localData = StorageService.fetchTransactionsLocal();
+
         if (apiUrl) {
             console.log("Cloud Syncing Transactions...");
             try {
@@ -30,19 +32,36 @@ export const StorageService = {
 
                 if (!response.ok) {
                     console.warn("Cloud offline, using local cache.");
-                    return StorageService.fetchTransactionsLocal();
+                    return localData;
                 }
 
                 const data = await response.json();
 
-                // SINGLE SOURCE OF TRUTH: Overwrite local with Cloud
+                // SINGLE SOURCE OF TRUTH (Modified with Auto-Heal)
                 if (data.transactions) {
+                    // Scenario: Cloud is empty, but Local has data.
+                    // This implies we started fresh and haven't successfully pushed to cloud yet.
+                    if (data.transactions.length === 0 && localData.length > 0) {
+                        console.log("Cloud empty, Local has data. Auto-healing Cloud...");
+                        // Prevent overwrite
+                        return localData;
+                    }
+
                     console.log("Cloud Transactions Received:", data.transactions.length);
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(data.transactions));
 
-                    // Also sync other entities if present
-                    if (data.accounts) localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(data.accounts));
-                    if (data.budgets) localStorage.setItem(BUDGETS_KEY, JSON.stringify(data.budgets));
+                    // Sync other entities if present
+                    if (data.accounts) {
+                        const localAccs = StorageService.fetchAccountsLocal();
+                        if (data.accounts.length === 0 && localAccs.length > 0) {
+                            // Do not overwrite
+                        } else {
+                            localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(data.accounts));
+                        }
+                    }
+                    if (data.budgets) {
+                        localStorage.setItem(BUDGETS_KEY, JSON.stringify(data.budgets));
+                    }
 
                     return data.transactions;
                 }
@@ -50,7 +69,7 @@ export const StorageService = {
                 console.error("Cloud Sync Failed", e);
             }
         }
-        return StorageService.fetchTransactionsLocal();
+        return localData;
     },
 
     fetchTransactionsLocal: () => {
@@ -65,7 +84,7 @@ export const StorageService = {
     saveTransaction: async (transaction) => {
         const apiUrl = StorageService.getApiUrl();
 
-        // Determine type locally first (business logic)
+        // Determine type locally first
         if (!transaction.type) {
             transaction.type = (transaction.category === 'Income & Credits') ? 'income' : 'expense';
         }
@@ -81,19 +100,13 @@ export const StorageService = {
         }
 
         if (apiUrl) {
-            console.log("Saving to Cloud:", transaction);
-            try {
-                // Background Sync (Fire and Forget if no-cors)
-                fetch(apiUrl, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'saveTransaction', payload: transaction }),
-                    headers: { 'Content-Type': 'text/plain' },
-                    redirect: 'follow',
-                    mode: 'no-cors' // Default to resilient mode directly
-                }).catch(e => console.error("Cloud BG Save Failed", e));
-            } catch (e) {
-                console.error("Cloud Save Failed", e);
-            }
+            fetch(apiUrl, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'saveTransaction', payload: transaction }),
+                headers: { 'Content-Type': 'text/plain' },
+                redirect: 'follow',
+                mode: 'no-cors'
+            }).catch(e => console.error("Cloud BG Save Failed", e));
         }
 
         return updatedTs;
@@ -104,16 +117,12 @@ export const StorageService = {
 
         // Optimistic Delete
         let transactions = StorageService.fetchTransactionsLocal();
-        const transactionToDelete = transactions.find(t => t.id === id);
         const updated = transactions.filter(t => t.id !== id);
-
-        // Local Persistence
         localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 
         // Revert Account Balance
-        if (transactionToDelete) {
-            await StorageService.updateLocalBalance(transactionToDelete, 'remove');
-        }
+        const toDelete = transactions.find(t => t.id === id);
+        if (toDelete) await StorageService.updateLocalBalance(toDelete, 'remove');
 
         if (apiUrl) {
             fetch(apiUrl, {
@@ -132,12 +141,19 @@ export const StorageService = {
 
     fetchAccounts: async () => {
         const apiUrl = StorageService.getApiUrl();
+        const localAccounts = StorageService.fetchAccountsLocal();
+
         if (apiUrl) {
             try {
                 const response = await fetch(`${apiUrl}?action=getData`, { redirect: 'follow', mode: 'cors' });
                 if (response.ok) {
                     const data = await response.json();
                     if (data.accounts) {
+                        if (data.accounts.length === 0 && localAccounts.length > 0) {
+                            console.log("Cloud accounts empty, pushing local accounts...");
+                            await StorageService.saveAccounts(localAccounts); // Heal
+                            return localAccounts;
+                        }
                         localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(data.accounts));
                         return data.accounts;
                     }
@@ -146,7 +162,7 @@ export const StorageService = {
                 console.warn("Cloud Account Fetch Failed", e);
             }
         }
-        return StorageService.fetchAccountsLocal();
+        return localAccounts;
     },
 
     fetchAccountsLocal: () => {
@@ -158,20 +174,18 @@ export const StorageService = {
 
     saveAccounts: async (accounts) => {
         const apiUrl = StorageService.getApiUrl();
-
-        // Always save local first
         localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
 
         if (apiUrl) {
+            const payload = Array.isArray(accounts) ? accounts : [];
             fetch(apiUrl, {
                 method: 'POST',
-                body: JSON.stringify({ action: 'saveAccounts', payload: accounts }),
+                body: JSON.stringify({ action: 'saveAccounts', payload: payload }),
                 headers: { 'Content-Type': 'text/plain' },
                 redirect: 'follow',
                 mode: 'no-cors'
             }).catch(e => console.error("Cloud BG Save Accounts Failed", e));
         }
-
         return accounts;
     },
 
@@ -182,14 +196,15 @@ export const StorageService = {
         if (apiUrl) {
             try {
                 const response = await fetch(`${apiUrl}?action=getData`, { redirect: 'follow', mode: 'cors' });
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.budgets) {
-                        localStorage.setItem(BUDGETS_KEY, JSON.stringify(data.budgets));
-                        return data.budgets;
+                const data = await response.json();
+                if (data.budgets) {
+                    if (Object.keys(data.budgets).length === 0 && Object.keys(StorageService.fetchBudgetsLocal()).length > 0) {
+                        return StorageService.fetchBudgetsLocal(); // Prevent wipe
                     }
+                    localStorage.setItem(BUDGETS_KEY, JSON.stringify(data.budgets));
+                    return data.budgets;
                 }
-            } catch (e) { console.warn("Cloud Budget Fetch Failed", e); }
+            } catch (e) { return StorageService.fetchBudgetsLocal(); }
         }
         return StorageService.fetchBudgetsLocal();
     },
@@ -203,7 +218,6 @@ export const StorageService = {
 
     saveBudgets: async (budgets) => {
         const apiUrl = StorageService.getApiUrl();
-
         localStorage.setItem(BUDGETS_KEY, JSON.stringify(budgets));
 
         if (apiUrl) {
@@ -215,7 +229,6 @@ export const StorageService = {
                 mode: 'no-cors'
             }).catch(e => console.error(e));
         }
-
         return budgets;
     },
 
