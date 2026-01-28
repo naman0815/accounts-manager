@@ -30,20 +30,28 @@ export const StorageService = {
 
                 if (!response.ok) {
                     console.error("Cloud Error", response.status, await response.text());
-                    return [];
+                    return StorageService.fetchTransactionsLocal();
                 }
 
                 const data = await response.json();
                 console.log("Cloud Data Fetched:", data);
-                return data.transactions || [];
+
+                if (data.transactions) {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(data.transactions));
+                    return data.transactions;
+                }
+                return StorageService.fetchTransactionsLocal();
             } catch (e) {
                 console.error("Cloud fetch failed", e);
                 console.error("Attempted URL:", `${apiUrl}?action=getData`);
-                return [];
+                return StorageService.fetchTransactionsLocal();
             }
         }
 
-        // ... local fallback ...
+        return StorageService.fetchTransactionsLocal();
+    },
+
+    fetchTransactionsLocal: () => {
         try {
             const data = localStorage.getItem(STORAGE_KEY);
             return data ? JSON.parse(data) : [];
@@ -61,76 +69,41 @@ export const StorageService = {
         }
 
         // Optimistic Local Update
-        let transactions = await StorageService.fetchTransactions();
+        let transactions = StorageService.fetchTransactionsLocal();
         const updatedTs = [transaction, ...transactions];
 
-        if (apiUrl) {
-            console.log("Saving to Cloud:", transaction);
-            try {
-                await fetch(apiUrl, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'saveTransaction', payload: transaction }),
-                    headers: { 'Content-Type': 'text/plain' },
-                    redirect: 'follow',
-                    mode: 'cors'
-                });
-                return await StorageService.fetchTransactions();
-            } catch (e) {
-                console.warn("Standard Cloud Save Failed, attempting no-cors fallback...", e);
-                try {
-                    // Fallback to no-cors (Write Only)
-                    await fetch(apiUrl, {
-                        method: 'POST',
-                        body: JSON.stringify({ action: 'saveTransaction', payload: transaction }),
-                        headers: { 'Content-Type': 'text/plain' },
-                        redirect: 'follow',
-                        mode: 'no-cors'
-                    });
-                    console.log("no-cors save sent.");
-                } catch (e2) {
-                    console.error("All Cloud Saves Failed", e2);
-                }
-            }
-        }
-
-        // Always update local storage as optimistic cache (or primary if offline)
+        // Always save local first (Optimistic UI + Cache)
         localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedTs));
         if (transaction.accountId) {
             await StorageService.updateLocalBalance(transaction, 'add');
         }
+
+        if (apiUrl) {
+            console.log("Saving to Cloud:", transaction);
+            try {
+                // Background Sync (Fire and Forget if no-cors)
+                fetch(apiUrl, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'saveTransaction', payload: transaction }),
+                    headers: { 'Content-Type': 'text/plain' },
+                    redirect: 'follow',
+                    mode: 'no-cors' // Default to resilient mode directly
+                }).catch(e => console.error("Cloud BG Save Failed", e));
+            } catch (e) {
+                console.error("Cloud Save Failed", e);
+            }
+        }
+
         return updatedTs;
     },
 
     deleteTransaction: async (id) => {
         const apiUrl = StorageService.getApiUrl();
+
         // Optimistic Delete
-        let transactions = await StorageService.fetchTransactions();
+        let transactions = StorageService.fetchTransactionsLocal();
         const transactionToDelete = transactions.find(t => t.id === id);
         const updated = transactions.filter(t => t.id !== id);
-
-        if (apiUrl) {
-            try {
-                await fetch(apiUrl, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'deleteTransaction', id }),
-                    headers: { 'Content-Type': 'text/plain' },
-                    redirect: 'follow',
-                    mode: 'cors'
-                });
-                return await StorageService.fetchTransactions();
-            } catch (e) {
-                console.warn("Cloud Delete Failed, retrying no-cors", e);
-                try {
-                    await fetch(apiUrl, {
-                        method: 'POST',
-                        body: JSON.stringify({ action: 'deleteTransaction', id }),
-                        headers: { 'Content-Type': 'text/plain' },
-                        redirect: 'follow',
-                        mode: 'no-cors'
-                    });
-                } catch (e2) { console.error(e2); }
-            }
-        }
 
         // Local Persistence
         localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
@@ -139,6 +112,17 @@ export const StorageService = {
         if (transactionToDelete) {
             await StorageService.updateLocalBalance(transactionToDelete, 'remove');
         }
+
+        if (apiUrl) {
+            fetch(apiUrl, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'deleteTransaction', id }),
+                headers: { 'Content-Type': 'text/plain' },
+                redirect: 'follow',
+                mode: 'no-cors'
+            }).catch(e => console.error("Cloud BG Delete Failed", e));
+        }
+
         return updated;
     },
 
@@ -151,13 +135,19 @@ export const StorageService = {
                 const response = await fetch(`${apiUrl}?action=getData`, { redirect: 'follow', mode: 'cors' });
                 if (!response.ok) throw new Error("Status " + response.status);
                 const data = await response.json();
-                return data.accounts || [];
+                if (data.accounts) {
+                    localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(data.accounts));
+                    return data.accounts;
+                }
             } catch (e) {
-                console.error("Account Fetch Failed", e);
-                return [];
+                console.error("Account Fetch Failed, using local cache", e);
+                return StorageService.fetchAccountsLocal();
             }
         }
+        return StorageService.fetchAccountsLocal();
+    },
 
+    fetchAccountsLocal: () => {
         try {
             const data = localStorage.getItem(ACCOUNTS_KEY);
             return data ? JSON.parse(data) : [];
@@ -166,31 +156,20 @@ export const StorageService = {
 
     saveAccounts: async (accounts) => {
         const apiUrl = StorageService.getApiUrl();
+
+        // Always save local first
+        localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+
         if (apiUrl) {
-            try {
-                await fetch(apiUrl, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'saveAccounts', payload: accounts }),
-                    headers: { 'Content-Type': 'text/plain' },
-                    redirect: 'follow',
-                    mode: 'cors'
-                });
-                return accounts;
-            } catch (e) {
-                console.warn("Cloud Save Accounts Failed, retrying no-cors", e);
-                try {
-                    await fetch(apiUrl, {
-                        method: 'POST',
-                        body: JSON.stringify({ action: 'saveAccounts', payload: accounts }),
-                        headers: { 'Content-Type': 'text/plain' },
-                        redirect: 'follow',
-                        mode: 'no-cors'
-                    });
-                } catch (e2) { console.error(e2); }
-            }
+            fetch(apiUrl, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'saveAccounts', payload: accounts }),
+                headers: { 'Content-Type': 'text/plain' },
+                redirect: 'follow',
+                mode: 'no-cors'
+            }).catch(e => console.error("Cloud BG Save Accounts Failed", e));
         }
 
-        localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
         return accounts;
     },
 
@@ -202,10 +181,16 @@ export const StorageService = {
             try {
                 const response = await fetch(`${apiUrl}?action=getData`, { redirect: 'follow', mode: 'cors' });
                 const data = await response.json();
-                return data.budgets || {};
-            } catch (e) { return {}; }
+                if (data.budgets) {
+                    localStorage.setItem(BUDGETS_KEY, JSON.stringify(data.budgets));
+                    return data.budgets;
+                }
+            } catch (e) { return StorageService.fetchBudgetsLocal(); }
         }
+        return StorageService.fetchBudgetsLocal();
+    },
 
+    fetchBudgetsLocal: () => {
         try {
             const data = localStorage.getItem(BUDGETS_KEY);
             return data ? JSON.parse(data) : {};
@@ -214,30 +199,19 @@ export const StorageService = {
 
     saveBudgets: async (budgets) => {
         const apiUrl = StorageService.getApiUrl();
-        if (apiUrl) {
-            try {
-                await fetch(apiUrl, {
-                    method: 'POST',
-                    body: JSON.stringify({ action: 'saveBudgets', payload: budgets }),
-                    headers: { 'Content-Type': 'text/plain' },
-                    redirect: 'follow',
-                    mode: 'cors'
-                });
-                return budgets;
-            } catch (e) {
-                try {
-                    await fetch(apiUrl, {
-                        method: 'POST',
-                        body: JSON.stringify({ action: 'saveBudgets', payload: budgets }),
-                        headers: { 'Content-Type': 'text/plain' },
-                        redirect: 'follow',
-                        mode: 'no-cors'
-                    });
-                } catch (e2) { console.error(e2); }
-            }
-        }
 
         localStorage.setItem(BUDGETS_KEY, JSON.stringify(budgets));
+
+        if (apiUrl) {
+            fetch(apiUrl, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'saveBudgets', payload: budgets }),
+                headers: { 'Content-Type': 'text/plain' },
+                redirect: 'follow',
+                mode: 'no-cors'
+            }).catch(e => console.error(e));
+        }
+
         return budgets;
     },
 
@@ -246,13 +220,7 @@ export const StorageService = {
     updateLocalBalance: async (transaction, mode) => {
         if (!transaction.accountId) return;
 
-        // Use local storage directly to avoid async loops during fallback chaos
-        let accounts = [];
-        try {
-            const raw = localStorage.getItem(ACCOUNTS_KEY);
-            accounts = raw ? JSON.parse(raw) : [];
-        } catch (e) { }
-
+        let accounts = StorageService.fetchAccountsLocal();
         const accountIndex = accounts.findIndex(a => a.id === transaction.accountId);
         if (accountIndex >= 0) {
             const account = accounts[accountIndex];
@@ -264,7 +232,6 @@ export const StorageService = {
                 else account.balance += transaction.amount;
             }
             accounts[accountIndex] = account;
-            // Recurs to saveAccounts to sync this balance change to cloud
             await StorageService.saveAccounts(accounts);
         }
     },
