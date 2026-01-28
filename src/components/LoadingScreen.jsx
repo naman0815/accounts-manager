@@ -1,105 +1,174 @@
+import { useEffect, useState } from 'react';
+
 export function LoadingScreen() {
+    // Generate random positions for coins once on mount
+    const coins = Array.from({ length: 8 }).map((_, i) => ({
+        id: i,
+        left: Math.random() * 60 + 20 + '%', // Random horizontal position 20-80%
+        delay: Math.random() * 1.5 + 's',
+        duration: Math.random() * 1 + 1 + 's'
+    }));
+
     return (
         <div className="loading-screen">
+            {/* Falling Coins Container */}
+            <div className="coins-container">
+                {coins.map((coin) => (
+                    <div
+                        key={coin.id}
+                        className="coin"
+                        style={{
+                            left: coin.left,
+                            animationDelay: coin.delay,
+                            animationDuration: coin.duration
+                        }}
+                    >
+                        $
+                    </div>
+                ))}
+            </div>
+
             <div className="piggy-wrapper">
-                <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1"
-                    className="piggy-svg"
-                >
-                    <defs>
-                        <linearGradient id="gold-fill" x1="0" x2="0" y1="1" y2="0">
-                            <stop offset="0%" stopColor="#fbbf24" />
-                            <stop offset="0%" stopColor="#fbbf24" className="animate-fill">
-                                <animate
-                                    attributeName="offset"
-                                    values="0%;100%"
-                                    dur="1.5s"
-                                    repeatCount="indefinite"
-                                />
-                            </stop>
-                            <stop offset="0.1%" stopColor="#e2e8f0" className="animate-fill-bg">
-                                <animate
-                                    attributeName="offset"
-                                    values="0%;100%"
-                                    dur="1.5s"
-                                    repeatCount="indefinite"
-                                />
-                            </stop>
-                            <stop offset="100%" stopColor="#e2e8f0" />
-                        </linearGradient>
-                    </defs>
-                    <path
-                        fill="url(#gold-fill)"
-                        stroke="#94a3b8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M19 5c-1.5 0-2.8 0.6-3.5 1.5l-1 1.3c-0.6 0.8-1.7 1.2-2.8 1.2h-5.4c-1.1 0-2.1 0.4-2.8 1.2l-1 1.3c-0.7 0.9-2 1.5-3.5 1.5v0c-1.7 0-3 1.3-3 3v2c0 1.7 1.3 3 3 3h16c1.7 0 3-1.3 3-3v-2c0-1.7-1.3-3-3-3v0z"
-                    />
-                    <path
-                        fill="url(#gold-fill)"
-                        stroke="#94a3b8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M16 5v-2c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2"
-                    />
-                    {/* Coin slot */}
-                    <path
-                        d="M12 9v2"
-                        stroke="#cbd5e1"
-                        strokeWidth="2"
-                    />
-                    {/* Simplify simpler piggy shape for icon set compatibility if needed */}
-                    <path
-                        d="M20.5 10c0-3-2.5-5.5-5.5-5.5h-1c-.8-1.5-2.3-2.5-4-2.5S6.8 3 6 4.5H5C2 4.5 0 7 0 10v3c0 1.1.9 2 2 2h1v4h4v-4h10v4h4v-4h1c1.1 0 2-.9 2-2v-3z"
-                        fill="url(#gold-fill)"
-                        stroke="#475569"
+                <div className="piggy-container">
+                    {/* Background Pig (Gray/Empty) */}
+                    <svg
+                        viewBox="0 0 24 24"
+                        className="piggy-base"
+                        fill="none"
+                        stroke="currentColor"
                         strokeWidth="1.5"
-                    />
-                    <path
-                        d="M16 11h.01"
-                        stroke="#475569"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                    />
-                </svg>
+                    >
+                        <path
+                            d="M19 5c-1.5 0-2.8 0.6-3.5 1.5l-1 1.3c-0.6 0.8-1.7 1.2-2.8 1.2h-5.4c-1.1 0-2.1 0.4-2.8 1.2l-1 1.3c-0.7 0.9-2 1.5-3.5 1.5v0c-1.7 0-3 1.3-3 3v2c0 1.7 1.3 3 3 3h16c1.7 0 3-1.3 3-3v-2c0-1.7-1.3-3-3-3v0z M16 5v-2c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2 M12 9v2"
+                            stroke="#94a3b8"
+                            fill="#e2e8f0"
+                        />
+                    </svg>
+
+                    {/* Foreground Pig (Gold/Filling) */}
+                    <div className="piggy-fill-mask">
+                        <svg
+                            viewBox="0 0 24 24"
+                            className="piggy-gold"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="1.5"
+                        >
+                            <path
+                                d="M19 5c-1.5 0-2.8 0.6-3.5 1.5l-1 1.3c-0.6 0.8-1.7 1.2-2.8 1.2h-5.4c-1.1 0-2.1 0.4-2.8 1.2l-1 1.3c-0.7 0.9-2 1.5-3.5 1.5v0c-1.7 0-3 1.3-3 3v2c0 1.7 1.3 3 3 3h16c1.7 0 3-1.3 3-3v-2c0-1.7-1.3-3-3-3v0z M16 5v-2c0-1.1-.9-2-2-2h-4c-1.1 0-2 .9-2 2v2 M12 9v2"
+                                stroke="#b45309"
+                                fill="#fbbf24"
+                            />
+                        </svg>
+                    </div>
+                </div>
+
                 <div className="loading-text">Syncing...</div>
             </div>
+
             <style>{`
                 .loading-screen {
                     position: fixed;
                     inset: 0;
-                    background: rgba(255, 255, 255, 0.1); 
+                    background: rgba(255, 255, 255, 0.2); 
                     backdrop-filter: blur(12px);
                     -webkit-backdrop-filter: blur(12px);
                     display: flex;
                     justify-content: center;
                     align-items: center;
                     z-index: 9999;
+                    overflow: hidden;
                     transition: opacity 0.3s ease;
                 }
+
                 .piggy-wrapper {
-                    text-align: center;
+                    position: relative;
                     display: flex;
                     flex-direction: column;
                     align-items: center;
-                    gap: 1rem;
+                    gap: 1.5rem;
+                    z-index: 20;
                 }
-                .piggy-svg {
-                    width: 80px;
-                    height: 80px;
+
+                .piggy-container {
+                    position: relative;
+                    width: 100px;
+                    height: 100px;
                 }
+
+                .piggy-base, .piggy-gold {
+                    width: 100%;
+                    height: 100%;
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                }
+
+                /* Mask wrapper to animate height/filling */
+                .piggy-fill-mask {
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 0%; /* Start empty */
+                    overflow: hidden;
+                    animation: fillUp 1.5s ease-out forwards;
+                }
+                
+                /* The gold pig inside the mask needs to stay fixed size, 
+                   so we set height to 100px (container height) and position it 
+                   relative to the bottom so it doesn't squat when mask shrinks. */
+                .piggy-fill-mask svg {
+                    height: 100px;
+                    width: 100px;
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                }
+
+                @keyframes fillUp {
+                    0% { height: 0%; }
+                    100% { height: 100%; }
+                }
+
+                /* Coins */
+                .coins-container {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    pointer-events: none;
+                    z-index: 10;
+                }
+
+                .coin {
+                    position: absolute;
+                    top: -20px;
+                    font-size: 24px;
+                    color: #fbbf24;
+                    font-weight: bold;
+                    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    opacity: 0;
+                    animation-name: fall;
+                    animation-timing-function: ease-in;
+                    animation-iteration-count: infinite;
+                }
+
+                @keyframes fall {
+                    0% { transform: translateY(-50px) rotate(0deg); opacity: 0; }
+                    20% { opacity: 1; }
+                    100% { transform: translateY(400px) rotate(360deg); opacity: 0; }
+                }
+
                 .loading-text {
                     font-weight: 600;
                     color: #64748b;
                     font-size: 1.1rem;
-                    animation: pulse 1.5s infinite;
-                }
-                @keyframes pulse {
-                    0%, 100% { opacity: 0.6; }
-                    50% { opacity: 1; }
+                    letter-spacing: 0.5px;
+                    text-transform: uppercase;
+                    font-size: 0.9rem;
+                    opacity: 0.8;
                 }
             `}</style>
         </div>
