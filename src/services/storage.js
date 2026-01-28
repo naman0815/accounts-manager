@@ -19,7 +19,7 @@ export const StorageService = {
     fetchTransactions: async () => {
         const apiUrl = StorageService.getApiUrl();
         if (apiUrl) {
-            console.log("Cloud Fetching from:", apiUrl);
+            console.log("Cloud Syncing Transactions...");
             try {
                 // Apps Script Web Apps redirect (302) to googleusercontent.com
                 const response = await fetch(`${apiUrl}?action=getData`, {
@@ -29,25 +29,27 @@ export const StorageService = {
                 });
 
                 if (!response.ok) {
-                    console.error("Cloud Error", response.status, await response.text());
+                    console.warn("Cloud offline, using local cache.");
                     return StorageService.fetchTransactionsLocal();
                 }
 
                 const data = await response.json();
-                console.log("Cloud Data Fetched:", data);
 
+                // SINGLE SOURCE OF TRUTH: Overwrite local with Cloud
                 if (data.transactions) {
+                    console.log("Cloud Transactions Received:", data.transactions.length);
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(data.transactions));
+
+                    // Also sync other entities if present
+                    if (data.accounts) localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(data.accounts));
+                    if (data.budgets) localStorage.setItem(BUDGETS_KEY, JSON.stringify(data.budgets));
+
                     return data.transactions;
                 }
-                return StorageService.fetchTransactionsLocal();
             } catch (e) {
-                console.error("Cloud fetch failed", e);
-                console.error("Attempted URL:", `${apiUrl}?action=getData`);
-                return StorageService.fetchTransactionsLocal();
+                console.error("Cloud Sync Failed", e);
             }
         }
-
         return StorageService.fetchTransactionsLocal();
     },
 
@@ -133,15 +135,15 @@ export const StorageService = {
         if (apiUrl) {
             try {
                 const response = await fetch(`${apiUrl}?action=getData`, { redirect: 'follow', mode: 'cors' });
-                if (!response.ok) throw new Error("Status " + response.status);
-                const data = await response.json();
-                if (data.accounts) {
-                    localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(data.accounts));
-                    return data.accounts;
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.accounts) {
+                        localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(data.accounts));
+                        return data.accounts;
+                    }
                 }
             } catch (e) {
-                console.error("Account Fetch Failed, using local cache", e);
-                return StorageService.fetchAccountsLocal();
+                console.warn("Cloud Account Fetch Failed", e);
             }
         }
         return StorageService.fetchAccountsLocal();
@@ -180,12 +182,14 @@ export const StorageService = {
         if (apiUrl) {
             try {
                 const response = await fetch(`${apiUrl}?action=getData`, { redirect: 'follow', mode: 'cors' });
-                const data = await response.json();
-                if (data.budgets) {
-                    localStorage.setItem(BUDGETS_KEY, JSON.stringify(data.budgets));
-                    return data.budgets;
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.budgets) {
+                        localStorage.setItem(BUDGETS_KEY, JSON.stringify(data.budgets));
+                        return data.budgets;
+                    }
                 }
-            } catch (e) { return StorageService.fetchBudgetsLocal(); }
+            } catch (e) { console.warn("Cloud Budget Fetch Failed", e); }
         }
         return StorageService.fetchBudgetsLocal();
     },
