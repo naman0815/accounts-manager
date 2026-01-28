@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { StorageService } from '../services/storage';
 
 export function AccountSetup({ onComplete }) {
     const [accounts, setAccounts] = useState([
@@ -6,6 +7,7 @@ export function AccountSetup({ onComplete }) {
         { id: crypto.randomUUID(), name: 'SBI Savings', type: 'savings', balance: 0 },
         { id: crypto.randomUUID(), name: 'HDFC Credit Card', type: 'credit', balance: 0 }
     ]);
+    const [isSaving, setIsSaving] = useState(false);
 
     const handleUpdate = (index, field, value) => {
         const updated = [...accounts];
@@ -22,9 +24,19 @@ export function AccountSetup({ onComplete }) {
         setAccounts(updated);
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        onComplete(accounts);
+        setIsSaving(true);
+        try {
+            // Force save using StorageService (handles Cloud fallback)
+            await StorageService.saveAccounts(accounts);
+            onComplete(accounts);
+        } catch (e) {
+            console.error(e);
+            alert("Failed to save accounts. Check console.");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -68,8 +80,13 @@ export function AccountSetup({ onComplete }) {
 
                     <button type="button" onClick={handleAdd} className="text-btn">+ Add another account</button>
 
-                    <button type="submit" className="primary-btn full-width" style={{ marginTop: '2rem' }}>
-                        Start Tracking
+                    <button
+                        type="submit"
+                        className="primary-btn full-width"
+                        style={{ marginTop: '2rem', opacity: isSaving ? 0.7 : 1 }}
+                        disabled={isSaving}
+                    >
+                        {isSaving ? 'Setting up...' : 'Start Tracking'}
                     </button>
                 </form>
             </div>
