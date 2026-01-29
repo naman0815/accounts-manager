@@ -7,6 +7,9 @@ export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, mont
     const selectedAccount = accounts.find(a => a.id === selectedAccountId) || (accounts.length > 0 ? accounts[0] : null);
     const balance = selectedAccount ? selectedAccount.balance : 0;
 
+    // Censored string matches length of digits (approx)
+    const censored = "•".repeat(balance.toString().length + 1);
+
     return (
         <div className="balance-card">
             {/* Top Row: Account & Menu */}
@@ -23,7 +26,6 @@ export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, mont
                     </select>
                     <ChevronDown size={16} className="chevron-icon" />
                 </div>
-                {/* Optional: Menu or More icon could go here */}
             </div>
 
             {/* Middle: Total Balance */}
@@ -33,7 +35,7 @@ export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, mont
                     <h2 className="balance-amount">
                         {showBalance
                             ? `₹${balance.toLocaleString('en-IN')}`
-                            : '••••••'}
+                            : `₹ ${censored}`}
                     </h2>
                     <button
                         className="toggle-btn"
@@ -63,10 +65,10 @@ export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, mont
             <style>{`
                 .balance-card {
                     background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-                    border-radius: 20px;
-                    padding: 1.5rem;
+                    border-radius: 24px;
+                    padding: 1.75rem;
                     color: white;
-                    box-shadow: 0 10px 25px -5px rgba(59, 130, 246, 0.5);
+                    box-shadow: 0 15px 30px -10px rgba(59, 130, 246, 0.6);
                     margin-bottom: 2rem;
                     position: relative;
                     overflow: hidden;
@@ -76,16 +78,17 @@ export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, mont
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    margin-bottom: 1.5rem;
+                    margin-bottom: 1.25rem;
                 }
 
                 .account-selector {
                     position: relative;
                     display: flex;
                     align-items: center;
-                    background: rgba(255, 255, 255, 0.1);
-                    border-radius: 8px;
-                    padding: 0.25rem 0.75rem;
+                    background: rgba(255, 255, 255, 0.15);
+                    border-radius: 12px;
+                    padding: 0.35rem 0.85rem;
+                    backdrop-filter: blur(4px);
                 }
 
                 .account-select {
@@ -94,7 +97,7 @@ export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, mont
                     border: none;
                     color: white;
                     font-size: 0.9rem;
-                    font-weight: 500;
+                    font-weight: 600;
                     padding-right: 1.5rem;
                     cursor: pointer;
                 }
@@ -103,7 +106,7 @@ export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, mont
 
                 .chevron-icon {
                     position: absolute;
-                    right: 0.5rem;
+                    right: 0.6rem;
                     pointer-events: none;
                     opacity: 0.8;
                 }
@@ -111,14 +114,16 @@ export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, mont
                 .balance-label {
                     font-size: 0.85rem;
                     color: rgba(255, 255, 255, 0.7);
-                    margin-bottom: 0.25rem;
+                    margin-bottom: 0.5rem;
+                    font-weight: 500;
                 }
 
                 .balance-amount-row {
                     display: flex;
                     align-items: center;
                     gap: 1rem;
-                    margin-bottom: 1.5rem;
+                    margin-bottom: 2rem;
+                    position: relative;
                 }
 
                 .balance-amount {
@@ -126,7 +131,7 @@ export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, mont
                     font-weight: 700;
                     margin: 0;
                     line-height: 1;
-                    letter-spacing: -1px;
+                    letter-spacing: -0.5px;
                 }
 
                 .toggle-btn {
@@ -139,12 +144,17 @@ export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, mont
                     display: flex;
                     align-items: center; justify-content: center;
                     transition: background 0.2s;
+                    /* Fix position to prevent jumping */
+                    position: absolute;
+                    right: 0;
+                    top: 50%;
+                    transform: translateY(-50%);
                 }
                 .toggle-btn:hover { background: rgba(255,255,255,0.2); }
 
                 .card-footer {
                     display: flex;
-                    justify-content: space-between;
+                    gap: 2rem;
                 }
 
                 .stat-item {
@@ -157,12 +167,12 @@ export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, mont
                     display: flex;
                     align-items: center;
                     gap: 0.4rem;
-                    font-size: 0.8rem;
-                    color: rgba(255,255,255,0.7);
+                    font-size: 0.85rem;
+                    color: rgba(255,255,255,0.8);
                 }
 
                 .stat-value {
-                    font-size: 1.1rem;
+                    font-size: 1.2rem;
                     font-weight: 600;
                 }
 

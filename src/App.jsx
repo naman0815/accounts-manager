@@ -20,6 +20,9 @@ function App() {
   const [budgets, setBudgets] = useState({});
   const [showSetup, setShowSetup] = useState(false);
 
+  // User Name State
+  const [userName, setUserName] = useState('User');
+
   // Date State
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -43,9 +46,23 @@ function App() {
 
       if (loadedTs) setTransactions(loadedTs);
       if (loadedBudgets) setBudgets(loadedBudgets);
+
+      // Load Username
+      const savedName = localStorage.getItem('am_user_name');
+      if (savedName) setUserName(savedName);
+
       setLoading(false);
     };
     loadData();
+
+    // Listen for name changes from Settings component
+    const handleStorageChange = () => {
+      const savedName = localStorage.getItem('am_user_name');
+      if (savedName) setUserName(savedName);
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+
   }, []);
 
   const handleSetupComplete = async (newAccounts) => {
@@ -89,26 +106,21 @@ function App() {
     return <AccountSetup onComplete={handleSetupComplete} />;
   }
 
-  // Header Component (Internal)
+  // Header Component
   const Header = () => (
     <header className="app-header" style={{
       display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      padding: '1rem 0', marginBottom: '1rem'
+      padding: '1rem 0', marginBottom: '0.5rem'
     }}>
       <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
-        <div style={{ width: '40px', height: '40px', background: '#e2e8f0', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <UserCircle size={24} color="#64748b" />
-        </div>
+        {/* Removed Profile Icon as requested */}
         <div>
-          <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Welcome Back</div>
-          <div style={{ fontWeight: 600 }}>User</div>
+          <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Welcome Back,</div>
+          <div style={{ fontWeight: 600, fontSize: '1.2rem' }}>{userName}</div>
         </div>
       </div>
       <div>
-        <button className="btn-icon" style={{ position: 'relative' }}>
-          <Bell size={20} />
-          <span style={{ position: 'absolute', top: 0, right: 0, width: '8px', height: '8px', background: '#ef4444', borderRadius: '50%' }}></span>
-        </button>
+        {/* Notification Icon Removed */}
       </div>
     </header>
   );
@@ -117,7 +129,7 @@ function App() {
     <div className="app-container">
       {loading && <LoadingScreen />}
 
-      <div className="container" style={{ paddingBottom: '80px' }}>
+      <div className="container" style={{ paddingBottom: '100px' }}>
 
         {/* Render Views based on Tab */}
         {activeTab === 'home' && (
@@ -126,7 +138,7 @@ function App() {
             <HomeDashboard
               accounts={accounts}
               transactions={transactions}
-              budgets={budgets} // Will need to pass budgets
+              budgets={budgets}
               onAddTransaction={handleAdd}
               onDeleteTransaction={handleDelete}
               currentDate={currentDate}
@@ -154,16 +166,15 @@ function App() {
           </div>
         )}
 
-        {activeTab === 'profile' && (
+        {activeTab === 'settings' && (
           <div style={{ paddingTop: '1rem' }}>
-            <h2 style={{ marginBottom: '1rem' }}>Profile & Settings</h2>
             <Settings
               accounts={accounts}
               onUpdateAccounts={handleUpdateAccounts}
               budgets={budgets}
               onUpdateBudgets={handleUpdateBudgets}
-              onClose={() => { }} // No close button needed in tab view
-              isTabView={true} // Add a prop to Settings to adjust layout if needed
+              onClose={() => { }}
+              isTabView={true}
             />
           </div>
         )}
