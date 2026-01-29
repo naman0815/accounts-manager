@@ -139,8 +139,6 @@ function getInvestments(ss) {
   if (!holdSheet) {
     holdSheet = ss.insertSheet("Holdings");
     holdSheet.appendRow(["AssetClass", "Identifier", "Exchange", "Quantity", "Metadata", "BuyPrice"]);
-    // Sample Data
-    holdSheet.appendRow(["MF", "120503", "", 100, "", 50]); // Axis Bluechip
     return [];
   }
 
@@ -165,26 +163,77 @@ function getInvestments(ss) {
 
   return holdings.map(h => {
     let currentPrice = 0;
+    let investedValue = 0;
     let value = 0;
     let lastUpdated = "";
 
+    // 1. Calculate Invested Value
+    if (h.assetClass === 'MF') {
+      if (h.metadata.type === 'SIP') {
+        // Calculate months since start
+        investedValue = calculateSipInvested(h.metadata.sipAmount, h.metadata.startDate);
+      } else if (h.metadata.type === 'LUMPSUM') {
+        investedValue = Number(h.metadata.amount) || 0;
+      } else {
+        investedValue = h.quantity * h.buyPrice;
+      }
+    } else {
+      investedValue = h.quantity * h.buyPrice;
+    }
+
+    // 2. Calculate Current Value
     if (['MF', 'STOCK', 'GOLD'].includes(h.assetClass)) {
       const priceData = prices[h.identifier];
       if (priceData) {
         currentPrice = Number(priceData.price);
         lastUpdated = priceData.date;
-        value = currentPrice * h.quantity;
+        
+        if (h.quantity > 0) {
+           value = currentPrice * h.quantity;
+        } else {
+           // Fallback: Use Invested Value (assume no gain/loss if we don't know units)
+           // ideally we fetch NAV and calculate units from invested amount/NAV at start date, but that's complex
+           // for now, just show invested value so it's not 0
+           value = investedValue; 
+           // If we have current NAV, we *could* estimate
+        }
       }
+      
+      // If we failed to get price but have invested value, preserve it
+      if (value === 0 && investedValue > 0) value = investedValue;
+      
     } else if (h.assetClass === 'EPF') {
       value = calculateEPF(h.metadata);
       currentPrice = value;
+      investedValue = value; // Approx
     } else if (h.assetClass === 'PPF') {
       value = calculatePPF(h.metadata);
       currentPrice = value;
+      investedValue = value;
     }
 
-    return { ...h, currentPrice, currentValue: value, lastUpdated };
+    return { 
+      ...h, 
+      currentPrice, 
+      currentValue: value, 
+      investedValue: investedValue, // Pass back to UI
+      lastUpdated 
+    };
   });
+}
+
+function calculateSipInvested(amount, startDateStr) {
+  if (!amount || !startDateStr) return 0;
+  const start = new Date(startDateStr);
+  const now = new Date();
+  
+  // Calculate months difference
+  let months = (now.getFullYear() - start.getFullYear()) * 12;
+  months -= start.getMonth();
+  months += now.getMonth();
+  
+  if (months < 0) months = 0;
+  return amount * (months + 1); // +1 because start month counts? or maybe just elapsed. Let's say +1 (current month paid)
 }
 
 function fetchAndCachePrices(ss, holdings) {
@@ -218,7 +267,7 @@ function fetchAndCachePrices(ss, holdings) {
   // 1. AMFI
   const mfs = toFetch.filter(h => h.assetClass === 'MF');
   if (mfs.length > 0) {
-    const amfiData = fetchAmfiData(); // Returns big map { '120503': 123.45 }
+    const amfiData = fetchAmfiData(); 
     mfs.forEach(h => {
       const price = amfiData[h.identifier];
       if (price) {
@@ -227,7 +276,7 @@ function fetchAndCachePrices(ss, holdings) {
     });
   }
 
-  // 2. Yahoo (Stocks/Gold)
+  // 2. Yahoo
   const stocks = toFetch.filter(h => ['STOCK', 'GOLD'].includes(h.assetClass));
   stocks.forEach(h => {
     const symbol = h.exchange === 'NSE' ? `${h.identifier}.NS` : `${h.identifier}.BO`;
@@ -250,7 +299,6 @@ function updateCache(sheet, cache, id, price, date, source) {
   }
 }
 
-// Start with empty cache for AMFI to avoid re-fetching 
 let AMFI_CACHE = null;
 
 function fetchAmfiData() {
@@ -260,7 +308,6 @@ function fetchAmfiData() {
     const text = response.getContentText();
     const map = {};
     const lines = text.split('\n');
-    // Format: Scheme Code;ISIN Div Payout/ ISIN Growth;ISIN Div Reinvestment;Scheme Name;Net Asset Value;Date
     for (let i = 0; i < lines.length; i++) {
       const parts = lines[i].split(';');
       if (parts.length > 4) {
@@ -280,7 +327,6 @@ function fetchAmfiData() {
 
 function fetchYahooPrice(symbol) {
   try {
-    // Yahoo Finance Chart API is generally reliable for basic price checks
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
     const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
     const json = JSON.parse(response.getContentText());
@@ -295,7 +341,7 @@ function fetchYahooPrice(symbol) {
 
 function calculateEPF(meta) {
   if (!meta || !meta.balance) return 0;
-  return meta.balance + (meta.monthly || 0) * 12; // Placeholder logic
+  return meta.balance + (meta.monthly || 0) * 12; 
 }
 
 function calculatePPF(meta) {

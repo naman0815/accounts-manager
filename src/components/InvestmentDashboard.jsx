@@ -58,8 +58,14 @@ export function InvestmentDashboard() {
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '1rem' }}>
                 <button
                     onClick={() => setShowAddModal(true)}
-                    className="btn-primary"
-                    style={{ fontSize: '0.9rem', padding: '0.5rem 1rem' }}
+                    style={{
+                        display: 'flex', alignItems: 'center', gap: '0.5rem',
+                        padding: '0.6rem 1.2rem', borderRadius: '8px', border: 'none',
+                        background: '#fff', color: '#0f172a',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                        fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s',
+                        fontSize: '0.9rem'
+                    }}
                 >
                     + Add Investment
                 </button>
