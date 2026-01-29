@@ -7,10 +7,12 @@ import { AccountSetup } from './components/AccountSetup';
 import { AccountList } from './components/AccountList';
 import { Settings } from './components/Settings';
 import { LoadingScreen } from './components/LoadingScreen';
-import { UserCircle } from 'lucide-react';
+import { InvestmentDashboard } from './components/InvestmentDashboard';
+import { UserCircle, TrendingUp, Wallet } from 'lucide-react';
 
 function App() {
   const [loading, setLoading] = useState(true);
+  const [view, setView] = useState('expenses'); // 'expenses' | 'investments'
   const [transactions, setTransactions] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [budgets, setBudgets] = useState({});
@@ -29,6 +31,7 @@ function App() {
         StorageService.fetchAccounts(),
         StorageService.fetchTransactions(),
         StorageService.fetchBudgets(),
+        StorageService.fetchInvestments(), // Prefetch investments
         minDelay
       ]);
 
@@ -132,29 +135,67 @@ function App() {
           </div>
         </header>
 
-        {/* Account Summary */}
-        <AccountList accounts={accounts} />
-
-        {/* Month Navigation */}
-        <div className="month-nav glass-panel" style={{ padding: '1rem' }}>
-          <button onClick={() => changeMonth(-1)} className="btn-icon">←</button>
-          <span className="month-label">{monthLabel}</span>
-          <button onClick={() => changeMonth(1)} className="btn-icon">→</button>
+        {/* View Switcher */}
+        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', background: '#e2e8f0', padding: '0.25rem', borderRadius: '12px' }}>
+          <button
+            onClick={() => setView('expenses')}
+            style={{
+              flex: 1,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+              padding: '0.75rem', borderRadius: '8px', border: 'none',
+              background: view === 'expenses' ? '#fff' : 'transparent',
+              color: view === 'expenses' ? '#0f172a' : '#64748b',
+              boxShadow: view === 'expenses' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+              fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s'
+            }}
+          >
+            <Wallet size={18} /> Expenses
+          </button>
+          <button
+            onClick={() => setView('investments')}
+            style={{
+              flex: 1,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
+              padding: '0.75rem', borderRadius: '8px', border: 'none',
+              background: view === 'investments' ? '#fff' : 'transparent',
+              color: view === 'investments' ? '#0f172a' : '#64748b',
+              boxShadow: view === 'investments' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
+              fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s'
+            }}
+          >
+            <TrendingUp size={18} /> Investments
+          </button>
         </div>
 
-        <div className="summary-card glass-panel">
-          <span className="label">Spent in {currentDate.toLocaleString('default', { month: 'long' })}</span>
-          <div className="total-amount">₹{totalSpent.toFixed(2)}</div>
-        </div>
+        {view === 'investments' ? (
+          <InvestmentDashboard />
+        ) : (
+          <>
+            {/* Account Summary */}
+            <AccountList accounts={accounts} />
 
-        <ExpenseInput onAdd={handleAdd} />
+            {/* Month Navigation */}
+            <div className="month-nav glass-panel" style={{ padding: '1rem' }}>
+              <button onClick={() => changeMonth(-1)} className="btn-icon">←</button>
+              <span className="month-label">{monthLabel}</span>
+              <button onClick={() => changeMonth(1)} className="btn-icon">→</button>
+            </div>
 
-        <TransactionList transactions={filteredTransactions} onDelete={handleDelete} />
+            <div className="summary-card glass-panel">
+              <span className="label">Spent in {currentDate.toLocaleString('default', { month: 'long' })}</span>
+              <div className="total-amount">₹{totalSpent.toFixed(2)}</div>
+            </div>
 
-        {/* Spacing for Stats */}
-        <div style={{ marginTop: '3rem' }}>
-          <Stats transactions={filteredTransactions} budgets={budgets} />
-        </div>
+            <ExpenseInput onAdd={handleAdd} />
+
+            <TransactionList transactions={filteredTransactions} onDelete={handleDelete} />
+
+            {/* Spacing for Stats */}
+            <div style={{ marginTop: '3rem' }}>
+              <Stats transactions={filteredTransactions} budgets={budgets} />
+            </div>
+          </>
+        )}
       </div>
 
       {showSettings && (

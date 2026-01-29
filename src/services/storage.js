@@ -1,6 +1,7 @@
 const STORAGE_KEY = 'am_transactions';
 const ACCOUNTS_KEY = 'am_accounts';
 const BUDGETS_KEY = 'am_budgets';
+const INVESTMENTS_KEY = 'am_investments';
 const API_URL_KEY = 'am_api_url';
 
 export const StorageService = {
@@ -23,7 +24,6 @@ export const StorageService = {
         if (apiUrl) {
             console.log("Cloud Syncing Transactions...");
             try {
-                // Apps Script Web Apps redirect (302) to googleusercontent.com
                 const response = await fetch(`${apiUrl}?action=getData`, {
                     method: 'GET',
                     redirect: 'follow',
@@ -31,36 +31,30 @@ export const StorageService = {
                 });
 
                 if (!response.ok) {
-                    console.warn("Cloud offline, using local cache.");
                     return localData;
                 }
 
                 const data = await response.json();
 
-                // SINGLE SOURCE OF TRUTH (Modified with Auto-Heal)
                 if (data.transactions) {
-                    // Scenario: Cloud is empty, but Local has data.
-                    // This implies we started fresh and haven't successfully pushed to cloud yet.
                     if (data.transactions.length === 0 && localData.length > 0) {
-                        console.log("Cloud empty, Local has data. Auto-healing Cloud...");
-                        // Prevent overwrite
                         return localData;
                     }
-
-                    console.log("Cloud Transactions Received:", data.transactions.length);
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(data.transactions));
 
-                    // Sync other entities if present
                     if (data.accounts) {
                         const localAccs = StorageService.fetchAccountsLocal();
                         if (data.accounts.length === 0 && localAccs.length > 0) {
-                            // Do not overwrite
+                            // heal check
                         } else {
                             localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(data.accounts));
                         }
                     }
                     if (data.budgets) {
                         localStorage.setItem(BUDGETS_KEY, JSON.stringify(data.budgets));
+                    }
+                    if (data.investments) {
+                        localStorage.setItem(INVESTMENTS_KEY, JSON.stringify(data.investments));
                     }
 
                     return data.transactions;
@@ -84,16 +78,13 @@ export const StorageService = {
     saveTransaction: async (transaction) => {
         const apiUrl = StorageService.getApiUrl();
 
-        // Determine type locally first
         if (!transaction.type) {
             transaction.type = (transaction.category === 'Income & Credits') ? 'income' : 'expense';
         }
 
-        // Optimistic Local Update
         let transactions = StorageService.fetchTransactionsLocal();
         const updatedTs = [transaction, ...transactions];
 
-        // Always save local first (Optimistic UI + Cache)
         localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedTs));
         if (transaction.accountId) {
             await StorageService.updateLocalBalance(transaction, 'add');
@@ -114,13 +105,10 @@ export const StorageService = {
 
     deleteTransaction: async (id) => {
         const apiUrl = StorageService.getApiUrl();
-
-        // Optimistic Delete
         let transactions = StorageService.fetchTransactionsLocal();
         const updated = transactions.filter(t => t.id !== id);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
 
-        // Revert Account Balance
         const toDelete = transactions.find(t => t.id === id);
         if (toDelete) await StorageService.updateLocalBalance(toDelete, 'remove');
 
@@ -150,7 +138,6 @@ export const StorageService = {
                     const data = await response.json();
                     if (data.accounts) {
                         if (data.accounts.length === 0 && localAccounts.length > 0) {
-                            console.log("Cloud accounts empty, pushing local accounts...");
                             await StorageService.saveAccounts(localAccounts); // Heal
                             return localAccounts;
                         }
@@ -158,9 +145,7 @@ export const StorageService = {
                         return data.accounts;
                     }
                 }
-            } catch (e) {
-                console.warn("Cloud Account Fetch Failed", e);
-            }
+            } catch (e) { console.warn("Cloud Account Fetch Failed", e); }
         }
         return localAccounts;
     },
@@ -199,7 +184,7 @@ export const StorageService = {
                 const data = await response.json();
                 if (data.budgets) {
                     if (Object.keys(data.budgets).length === 0 && Object.keys(StorageService.fetchBudgetsLocal()).length > 0) {
-                        return StorageService.fetchBudgetsLocal(); // Prevent wipe
+                        return StorageService.fetchBudgetsLocal();
                     }
                     localStorage.setItem(BUDGETS_KEY, JSON.stringify(data.budgets));
                     return data.budgets;
@@ -232,6 +217,33 @@ export const StorageService = {
         return budgets;
     },
 
+    // --- Investments ---
+
+    fetchInvestments: async () => {
+        const apiUrl = StorageService.getApiUrl();
+        if (apiUrl) {
+            try {
+                // We re-use 'getData' to get everything including investments
+                const response = await fetch(`${apiUrl}?action=getData`, { redirect: 'follow', mode: 'cors' });
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.investments) {
+                        localStorage.setItem(INVESTMENTS_KEY, JSON.stringify(data.investments));
+                        return data.investments;
+                    }
+                }
+            } catch (e) { console.warn("Cloud Investment Fetch Failed", e); }
+        }
+        return StorageService.fetchInvestmentsLocal();
+    },
+
+    fetchInvestmentsLocal: () => {
+        try {
+            const data = localStorage.getItem(INVESTMENTS_KEY);
+            return data ? JSON.parse(data) : [];
+        } catch (e) { return []; }
+    },
+
     // --- Helpers ---
 
     updateLocalBalance: async (transaction, mode) => {
@@ -259,11 +271,13 @@ export const StorageService = {
         const transactions = localStorage.getItem(STORAGE_KEY);
         const accounts = localStorage.getItem(ACCOUNTS_KEY);
         const budgets = localStorage.getItem(BUDGETS_KEY);
+        const investments = localStorage.getItem(INVESTMENTS_KEY);
 
         const data = {
             transactions: transactions ? JSON.parse(transactions) : [],
             accounts: accounts ? JSON.parse(accounts) : [],
-            budgets: budgets ? JSON.parse(budgets) : {}
+            budgets: budgets ? JSON.parse(budgets) : {},
+            investments: investments ? JSON.parse(investments) : []
         };
 
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -287,6 +301,9 @@ export const StorageService = {
 
                 if (parsed.budgets) {
                     localStorage.setItem(BUDGETS_KEY, JSON.stringify(parsed.budgets));
+                }
+                if (parsed.investments) {
+                    localStorage.setItem(INVESTMENTS_KEY, JSON.stringify(parsed.investments));
                 }
 
                 return parsed;
