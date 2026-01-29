@@ -48,7 +48,7 @@ Found `+(x.transactions?.length||0)+" transactions.")}else throw new Error("HTTP
 `+b.message+`
 
 1. Check URL ends in /exec
-2. Check permission is 'Anyone'`)}finally{p.innerText="Test",p.disabled=!1}},children:"Test"})]}),Y.jsxs("p",{style:{fontSize:"0.8rem",color:"#64748b"},children:["Paste the ",Y.jsx("strong",{children:"Web App URL"})," from your Google Apps Script deployment. It must end in ",Y.jsx("code",{children:"/exec"}),"."]})]})]}),Y.jsx("div",{className:"settings-footer",children:Y.jsx("button",{onClick:u,className:"primary-btn full-width",children:"Done"})})]})})}function XH(){return Y.jsxs("div",{className:"loading-screen",children:[Y.jsxs("div",{className:"gif-wrapper",children:[Y.jsx("img",{src:"/loading.gif",alt:"Loading...",className:"loading-gif",onError:e=>{e.target.style.display="none",document.getElementById("missing-text").style.display="block"}}),Y.jsxs("div",{id:"missing-text",style:{display:"none",textAlign:"center",color:"#64748b"},children:[Y.jsx("p",{style:{marginBottom:"0.5rem"},children:"🐖"}),Y.jsxs("p",{children:["Add ",Y.jsx("strong",{children:"loading.gif"})," to the ",Y.jsx("strong",{children:"public"})," folder"]})]}),Y.jsx("div",{className:"loading-text",children:"Syncing..."})]}),Y.jsx("style",{children:`
+2. Check permission is 'Anyone'`)}finally{p.innerText="Test",p.disabled=!1}},children:"Test"})]}),Y.jsxs("p",{style:{fontSize:"0.8rem",color:"#64748b"},children:["Paste the ",Y.jsx("strong",{children:"Web App URL"})," from your Google Apps Script deployment. It must end in ",Y.jsx("code",{children:"/exec"}),"."]})]})]}),Y.jsx("div",{className:"settings-footer",children:Y.jsx("button",{onClick:u,className:"primary-btn full-width",children:"Done"})})]})})}function XH(){return Y.jsxs("div",{className:"loading-screen",children:[Y.jsxs("div",{className:"gif-wrapper",children:[Y.jsx("img",{src:`/accounts-manager/loading.gif?t=${Date.now()}`,alt:"Loading...",className:"loading-gif",onError:e=>{e.target.style.display="none",document.getElementById("missing-text").style.display="block"}}),Y.jsxs("div",{id:"missing-text",style:{display:"none",textAlign:"center",color:"#64748b"},children:[Y.jsx("p",{style:{marginBottom:"0.5rem",fontSize:"2rem"},children:"🐖"}),Y.jsxs("p",{children:["Add ",Y.jsx("strong",{children:"loading.gif"})," to the ",Y.jsx("strong",{children:"public"})," folder"]})]}),Y.jsx("div",{className:"loading-text",children:"Syncing..."})]}),Y.jsx("style",{children:`
                 .loading-screen {
                     position: fixed;
                     inset: 0;
@@ -75,7 +75,7 @@ Found `+(x.transactions?.length||0)+" transactions.")}else throw new Error("HTTP
                     width: auto;
                     height: auto;
                     object-fit: contain;
-                    border-radius: 12px; /* Optional: adds nice rounded corners if gif is square */
+                    border-radius: 12px;
                 }
 
                 .loading-text {
