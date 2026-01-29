@@ -8,7 +8,7 @@ export function LoadingScreen() {
                    2. Paste it into the "public" folder of this project.
                 */}
                 <img
-                    src="/loading.gif"
+                    src={`/loading.gif?t=${Date.now()}`}
                     alt="Loading..."
                     className="loading-gif"
                     onError={(e) => {
@@ -19,7 +19,7 @@ export function LoadingScreen() {
 
                 {/* Fallback Text if GIF is missing */}
                 <div id="missing-text" style={{ display: 'none', textAlign: 'center', color: '#64748b' }}>
-                    <p style={{ marginBottom: '0.5rem' }}>🐖</p>
+                    <p style={{ marginBottom: '0.5rem', fontSize: '2rem' }}>🐖</p>
                     <p>Add <strong>loading.gif</strong> to the <strong>public</strong> folder</p>
                 </div>
 
@@ -53,7 +53,7 @@ export function LoadingScreen() {
                     width: auto;
                     height: auto;
                     object-fit: contain;
-                    border-radius: 12px; /* Optional: adds nice rounded corners if gif is square */
+                    border-radius: 12px;
                 }
 
                 .loading-text {
