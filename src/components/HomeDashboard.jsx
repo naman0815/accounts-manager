@@ -48,25 +48,7 @@ export function HomeDashboard({
                 monthlyExpense={expense}
             />
 
-            {/* Monthly Budget Summary */}
-            {totalBudget > 0 && (
-                <div className="budget-summary glass-panel">
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontSize: '0.9rem', fontWeight: 600 }}>
-                        <span>Monthly Budget</span>
-                        <span>{Math.min(budgetProgress, 100).toFixed(0)}%</span>
-                    </div>
-                    <div className="progress-bg">
-                        <div
-                            className="progress-fill"
-                            style={{ width: `${Math.min(budgetProgress, 100)}%` }}
-                        ></div>
-                    </div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.5rem', fontSize: '0.8rem', color: '#64748b' }}>
-                        <span>Spent ₹{totalSpent.toLocaleString()}</span>
-                        <span>Limit ₹{totalBudget.toLocaleString()}</span>
-                    </div>
-                </div>
-            )}
+
 
             {/* Quick Add (Visible on Home) */}
             <ExpenseInput onAdd={onAddTransaction} />
@@ -81,6 +63,8 @@ export function HomeDashboard({
             <TransactionList
                 transactions={monthlyTransactions}
                 onDelete={onDeleteTransaction}
+                accounts={accounts}
+                onUpdate={onUpdateTransaction}
             />
 
             <style>{`

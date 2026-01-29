@@ -43,7 +43,7 @@ export function BottomNav({ activeTab, onTabChange }) {
 
                 .bottom-nav {
                     pointer-events: auto;
-                    background: rgba(255, 255, 255, 0.9);
+                    background: rgba(30, 41, 59, 0.7);
                     backdrop-filter: blur(10px);
                     border: 1px solid rgba(255,255,255,0.5);
                     padding: 0.75rem 1.5rem;

@@ -43,6 +43,27 @@ export function AccountList({ accounts }) {
                                 ) : '••••••'}
                             </span>
                         </div>
+
+                        {/* Credit Limit Bar */}
+                        {acc.type === 'Credit Card' && acc.limit > 0 && (
+                            <div className="credit-utilization" style={{ marginTop: '0.5rem' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#94a3b8', marginBottom: '0.2rem' }}>
+                                    <span>Used: {((Math.abs(acc.balance) / acc.limit) * 100).toFixed(0)}%</span>
+                                    <span>Limit: ₹{acc.limit.toLocaleString()}</span>
+                                </div>
+                                <div style={{ height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px', overflow: 'hidden' }}>
+                                    <div
+                                        style={{
+                                            height: '100%',
+                                            width: `${Math.min((Math.abs(acc.balance) / acc.limit) * 100, 100)}%`,
+                                            background: (Math.abs(acc.balance) / acc.limit) > 0.8 ? '#f87171' : (Math.abs(acc.balance) / acc.limit) > 0.4 ? '#fbbf24' : '#34d399',
+                                            transition: 'width 0.5s ease',
+                                            borderRadius: '3px'
+                                        }}
+                                    ></div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>

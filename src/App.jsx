@@ -81,8 +81,25 @@ function App() {
     await StorageService.saveBudgets(updatedBudgets);
   };
 
+  const handleUpdate = async (t) => {
+    const updated = await StorageService.saveTransaction(t);
+    setTransactions(updated);
+    const freshAccounts = await StorageService.fetchAccounts();
+    setAccounts(freshAccounts);
+  };
+
   const handleAdd = async (t) => {
-    if (accounts.length > 0) t.accountId = accounts[0].id;
+    // Default Account Logic
+    if (!t.accountId) {
+      const def = localStorage.getItem('am_default_account');
+      // Verify account still exists
+      if (def && accounts.find(a => a.id === def)) {
+        t.accountId = def;
+      } else if (accounts.length > 0) {
+        t.accountId = accounts[0].id;
+      }
+    }
+
     const updated = await StorageService.saveTransaction(t);
     setTransactions(updated);
     const freshAccounts = await StorageService.fetchAccounts();
@@ -138,8 +155,9 @@ function App() {
             <HomeDashboard
               accounts={accounts}
               transactions={transactions}
-              budgets={budgets}
+              budgets={budgets} // Will need to pass budgets
               onAddTransaction={handleAdd}
+              onUpdateTransaction={handleUpdate}
               onDeleteTransaction={handleDelete}
               currentDate={currentDate}
             />

@@ -25,12 +25,12 @@ function doGet(e) {
     let accSheet = ss.getSheetByName("Accounts");
     if (!accSheet) {
       accSheet = ss.insertSheet("Accounts");
-      accSheet.appendRow(["ID", "Name", "Type", "Balance"]);
+      accSheet.appendRow(["ID", "Name", "Type", "Balance", "Limit"]);
     }
     if (accSheet.getLastRow() > 1) {
-      const rows = accSheet.getRange(2, 1, accSheet.getLastRow() - 1, 4).getValues();
+      const rows = accSheet.getRange(2, 1, accSheet.getLastRow() - 1, 5).getValues();
       result.accounts = rows.map(r => ({
-        id: r[0], name: r[1], type: r[2], balance: Number(r[3])
+        id: r[0], name: r[1], type: r[2], balance: Number(r[3]), limit: Number(r[4]) || 0
       })).filter(a => a.id);
     } else {
       result.accounts = [];
@@ -78,7 +78,24 @@ function doPost(e) {
     if (action === 'saveTransaction') {
       let sheet = ss.getSheetByName("Transactions");
       if (!sheet) { sheet = ss.insertSheet("Transactions"); sheet.appendRow(["ID", "Date", "Amount", "Category", "Description", "Type", "AccountID"]); }
-      sheet.appendRow([payload.id, payload.date, payload.amount, payload.category, payload.description, payload.type, payload.accountId || ""]);
+      
+      const id = payload.id;
+      let found = false;
+      const dataRange = sheet.getDataRange();
+      const values = dataRange.getValues();
+      
+      // Try to find existing row
+      for (let i = 1; i < values.length; i++) {
+        if (values[i][0] == id) {
+          sheet.getRange(i + 1, 1, 1, 7).setValues([[payload.id, payload.date, payload.amount, payload.category, payload.description, payload.type, payload.accountId || ""]]);
+          found = true;
+          break;
+        }
+      }
+      
+      if (!found) {
+        sheet.appendRow([payload.id, payload.date, payload.amount, payload.category, payload.description, payload.type, payload.accountId || ""]);
+      }
     }
     else if (action === 'deleteTransaction') {
       const sheet = ss.getSheetByName("Transactions");
@@ -90,10 +107,10 @@ function doPost(e) {
     }
     else if (action === 'saveAccounts') {
       let sheet = ss.getSheetByName("Accounts");
-      if (!sheet) { sheet = ss.insertSheet("Accounts"); sheet.appendRow(["ID", "Name", "Type", "Balance"]); }
+      if (!sheet) { sheet = ss.insertSheet("Accounts"); sheet.appendRow(["ID", "Name", "Type", "Balance", "Limit"]); }
       if(sheet.getLastRow() > 1) sheet.deleteRows(2, sheet.getLastRow() - 1);
-      const rows = payload.map(a => [a.id, a.name, a.type, a.balance]);
-      if(rows.length > 0) sheet.getRange(2, 1, rows.length, 4).setValues(rows);
+      const rows = payload.map(a => [a.id, a.name, a.type, a.balance, a.limit || ""]);
+      if(rows.length > 0) sheet.getRange(2, 1, rows.length, 5).setValues(rows);
     }
     else if (action === 'saveBudgets') {
       let sheet = ss.getSheetByName("Budgets");

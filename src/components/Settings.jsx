@@ -88,17 +88,35 @@ export function Settings({ accounts, onUpdateAccounts, budgets, onUpdateBudgets,
 
             <div className="settings-body">
                 {activeTab === 'profile' && (
-                    <div className="setting-row">
-                        <label>Your Name</label>
-                        <input
-                            type="text"
-                            value={userName}
-                            onChange={handleNameChange}
-                            className="input-base"
-                            placeholder="Enter your name"
-                        />
-                        <p className="hint-text">This name will be displayed on the home screen.</p>
-                    </div>
+                    <>
+                        <div className="setting-row">
+                            <label>Your Name</label>
+                            <input
+                                type="text"
+                                value={userName}
+                                onChange={handleNameChange}
+                                className="input-base"
+                                placeholder="Enter your name"
+                            />
+                        </div>
+                        <div className="setting-row">
+                            <label>Default Account</label>
+                            <select
+                                value={localStorage.getItem('am_default_account') || ''}
+                                onChange={(e) => {
+                                    localStorage.setItem('am_default_account', e.target.value);
+                                    window.dispatchEvent(new Event('storage'));
+                                }}
+                                className="input-base"
+                            >
+                                <option value="">Select Account...</option>
+                                {accounts.map(acc => (
+                                    <option key={acc.id} value={acc.id}>{acc.name}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <p className="hint-text">Name displayed on home & default account for new expenses.</p>
+                    </>
                 )}
 
                 {activeTab === 'budgets' && (
@@ -124,7 +142,7 @@ export function Settings({ accounts, onUpdateAccounts, budgets, onUpdateBudgets,
                 {activeTab === 'accounts' && (
                     <div className="account-list-edit">
                         {accounts.map((acc, index) => (
-                            <div key={acc.id} className="setting-row account-edit-row">
+                            <div key={acc.id} className="setting-row account-edit-row" style={{ flexWrap: 'wrap' }}>
                                 <div className="acc-info">
                                     <input
                                         type="text"
@@ -142,6 +160,17 @@ export function Settings({ accounts, onUpdateAccounts, budgets, onUpdateBudgets,
                                         onChange={(e) => handleAccountChange(index, 'balance', parseFloat(e.target.value) || 0)}
                                     />
                                 </div>
+                                {acc.type === 'Credit Card' && (
+                                    <div className="input-group" style={{ marginTop: '0.5rem', width: '100%', borderColor: '#ec4899' }}>
+                                        <span className="prefix" style={{ fontSize: '0.8rem', marginRight: '0.5rem', color: '#ec4899' }}>Limit</span>
+                                        <input
+                                            type="number"
+                                            value={acc.limit || ''}
+                                            onChange={(e) => handleAccountChange(index, 'limit', parseFloat(e.target.value) || 0)}
+                                            placeholder="Credit Limit"
+                                        />
+                                    </div>
+                                )}
                             </div>
                         ))}
                     </div>

@@ -65,7 +65,7 @@ export function Stats({ transactions, budgets }) {
                         <Bar dataKey="budget" barSize={8} fill="rgba(255,255,255,0.15)" radius={[0, 4, 4, 0]} name="Budget" />
 
                         {/* Foreground bar for Actual Spend */}
-                        <Bar dataKey="value" barSize={12} radius={[0, 4, 4, 0]} name="Spent">
+                        <Bar dataKey="value" barSize={20} radius={[0, 4, 4, 0]} name="Spent">
                             {data.map((entry, index) => (
                                 <Cell
                                     key={`cell-${index}`}
