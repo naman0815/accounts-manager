@@ -76,7 +76,8 @@ button {
   max-width: 600px;
   margin: 0 auto;
   padding: 1rem 0.8rem;
-  /* Reduced padding for mobile */
+  padding-bottom: 120px;
+  /* Increased for mobile overlap */
 }
 
 /* Mobile Optimizations */
@@ -171,9 +172,8 @@ button {
 }
 
 .expense-input:focus {
-  border-color: #ec4899;
-  /* Pink-500 */
-  box-shadow: 0 0 15px rgba(236, 72, 153, 0.4);
+  /* No outline, just subtle shadow */
+  box-shadow: 0 0 15px rgba(236, 72, 153, 0.25);
 }
 
 .shake-error {

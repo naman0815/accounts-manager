@@ -12,9 +12,9 @@ export function TransactionList({ transactions, onDelete, accounts = [], onUpdat
 
     const getIcon = (type) => {
         switch (type) {
-            case 'credit': case 'Credit Card': return <CreditCard size={16} />;
-            case 'wallet': case 'Wallet': return <Wallet size={16} />;
-            default: return <Landmark size={16} />;
+            case 'credit': case 'Credit Card': return <CreditCard size={20} />;
+            case 'wallet': case 'Wallet': return <Wallet size={20} />;
+            default: return <Landmark size={20} />;
         }
     };
 
@@ -30,7 +30,25 @@ export function TransactionList({ transactions, onDelete, accounts = [], onUpdat
 
                 return (
                     <div key={t.id} className="transaction-item glass-panel">
-                        <div className="t-left">
+                        {/* Left: Account Switcher */}
+                        {onUpdate && accounts.length > 0 && (
+                            <div className="account-switcher" style={{ position: 'relative', display: 'flex', alignItems: 'center', color: '#94a3b8', marginRight: '1rem' }}>
+                                <div style={{ transform: 'scale(1.4)', display: 'flex' }}>
+                                    {getIcon(accParams.type)}
+                                </div>
+                                <select
+                                    value={t.accountId || ''}
+                                    onChange={(e) => onUpdate({ ...t, accountId: e.target.value })}
+                                    style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
+                                >
+                                    {accounts.map(a => (
+                                        <option key={a.id} value={a.id}>{a.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
+                        <div className="t-left" style={{ flex: 1 }}>
                             <div className="t-main-info">
                                 <span className="t-tag">
                                     {t.tag || t.description || t.category}
@@ -46,25 +64,9 @@ export function TransactionList({ transactions, onDelete, accounts = [], onUpdat
                                 })}
                             </span>
                         </div>
-                        <div className="t-right">
-                            {/* Account Switcher */}
-                            {onUpdate && accounts.length > 0 && (
-                                <div className="account-switcher" style={{ position: 'relative', display: 'flex', alignItems: 'center', color: '#94a3b8', marginRight: '0.5rem' }}>
-                                    {getIcon(accParams.type)}
-                                    <select
-                                        value={t.accountId || ''}
-                                        onChange={(e) => onUpdate({ ...t, accountId: e.target.value })}
-                                        style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', opacity: 0, cursor: 'pointer' }}
-                                    >
-                                        {accounts.map(a => (
-                                            <option key={a.id} value={a.id}>{a.name}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            )}
-
+                        <div className="t-right" style={{ textAlign: 'right' }}>
                             <span className={`t-amount ${t.type === 'income' ? 'amt-income' : 'amt-expense'}`}>
-                                {t.type === 'income' ? '+' : ''}₹{t.amount.toFixed(2)}
+                                ₹{t.amount.toFixed(2)}
                             </span>
                             <button
                                 className="delete-btn"

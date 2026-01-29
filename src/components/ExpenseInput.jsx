@@ -94,7 +94,6 @@ export function ExpenseInput({ onAdd }) {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     disabled={isSubmitting} // Disable input while submitting
-                    autoFocus
                 />
                 <button
                     type="button"

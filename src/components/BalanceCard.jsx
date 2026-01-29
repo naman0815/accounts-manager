@@ -4,8 +4,19 @@ import { ChevronDown, Eye, EyeOff, TrendingUp, TrendingDown } from 'lucide-react
 export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, monthlyIncome, monthlyExpense }) {
     const [showBalance, setShowBalance] = useState(true);
 
-    const selectedAccount = accounts.find(a => a.id === selectedAccountId) || (accounts.length > 0 ? accounts[0] : null);
-    const balance = selectedAccount ? selectedAccount.balance : 0;
+    // Filter accounts if type is specified (e.g. for only CC view if needed, but generic here)
+    const activeAccount = accounts.find(a => a.id === selectedAccountId) || (accounts.length > 0 ? accounts[0] : null);
+
+    // Derived values
+    const isCredit = activeAccount?.type === 'Credit Card' || activeAccount?.type === 'credit';
+    const balance = activeAccount ? activeAccount.balance : 0;
+    const limit = activeAccount?.limit || 0;
+
+    // For Credit Cards: Balance is usually negative (debt). 
+    // "Used" = Math.abs(balance). 
+    // "Available" = Limit - Used.
+    const used = Math.abs(balance);
+    const utilization = limit > 0 ? (used / limit) * 100 : 0;
 
     // Censored string matches length of digits (approx)
     const censored = "•".repeat(balance.toString().length + 1);
@@ -16,7 +27,7 @@ export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, mont
             <div className="card-header">
                 <div className="account-selector">
                     <select
-                        value={selectedAccountId}
+                        value={selectedAccountId || ''}
                         onChange={(e) => onSelectAccount(e.target.value)}
                         className="account-select"
                     >
@@ -28,14 +39,21 @@ export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, mont
                 </div>
             </div>
 
-            {/* Middle: Total Balance */}
+            {/* Middle: Main Hero Text */}
             <div className="card-body">
-                <div className="balance-label">Total Balance</div>
+                <div className="balance-label">
+                    {isCredit ? 'Used / Limit' : 'Total Balance'}
+                </div>
+
                 <div className="balance-amount-row">
                     <h2 className="balance-amount">
                         {showBalance
-                            ? `₹${balance.toLocaleString('en-IN')}`
-                            : `₹ ${censored}`}
+                            ? (isCredit
+                                ? `₹${used.toLocaleString()} / ₹${limit.toLocaleString()}`
+                                : `₹${balance.toLocaleString('en-IN')}`)
+                            : (isCredit
+                                ? `₹${"•".repeat(used.toString().length)} / ₹${"•".repeat(limit.toString().length)}`
+                                : `₹ ${censored}`)}
                     </h2>
                     <button
                         className="toggle-btn"
@@ -44,9 +62,30 @@ export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, mont
                         {showBalance ? <Eye size={20} /> : <EyeOff size={20} />}
                     </button>
                 </div>
+
+                {/* Credit Check Bar (Only for Credit Cards) */}
+                {isCredit && limit > 0 && (
+                    <div className="credit-bar-container">
+                        <div className="credit-bar-bg">
+                            <div
+                                className="credit-bar-fill"
+                                style={{
+                                    width: `${Math.min(utilization, 100)}%`,
+                                    background: utilization > 90 ? '#ef4444' : utilization > 50 ? '#f59e0b' : '#10b981'
+                                }}
+                            ></div>
+                        </div>
+                        <div className="credit-bar-labels">
+                            <span>{utilization.toFixed(0)}% Used</span>
+                            <span>₹{(limit - used).toLocaleString()} Available</span>
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {/* Bottom: Income vs Expense */}
+            {/* Bottom: Income vs Expense (Hide for CC if desired, or keep?) -> User said "cant see budget indicator bar... Only for credit card". 
+               Let's keep Income/Expense for all as it's useful context (Month's inflow/outflow). 
+            */}
             <div className="card-footer">
                 <div className="stat-item">
                     <div className="stat-label">
@@ -72,13 +111,14 @@ export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, mont
                     margin-bottom: 2rem;
                     position: relative;
                     overflow: hidden;
+                    min-height: 220px;
                 }
 
                 .card-header {
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    margin-bottom: 1.25rem;
+                    margin-bottom: 1rem;
                 }
 
                 .account-selector {
@@ -122,15 +162,15 @@ export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, mont
                     display: flex;
                     align-items: center;
                     gap: 1rem;
-                    margin-bottom: 2rem;
+                    margin-bottom: 1.5rem;
                     position: relative;
                 }
 
                 .balance-amount {
-                    font-size: 2.5rem;
+                    font-size: 1.8rem; /* Slightly smaller to fit "Used / Limit" */
                     font-weight: 700;
                     margin: 0;
-                    line-height: 1;
+                    line-height: 1.2;
                     letter-spacing: -0.5px;
                 }
 
@@ -144,7 +184,6 @@ export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, mont
                     display: flex;
                     align-items: center; justify-content: center;
                     transition: background 0.2s;
-                    /* Fix position to prevent jumping */
                     position: absolute;
                     right: 0;
                     top: 50%;
@@ -152,9 +191,35 @@ export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, mont
                 }
                 .toggle-btn:hover { background: rgba(255,255,255,0.2); }
 
+                /* Credit Bar */
+                .credit-bar-container {
+                    margin-bottom: 1.5rem;
+                }
+                .credit-bar-bg {
+                    height: 8px;
+                    background: rgba(0,0,0,0.2);
+                    border-radius: 4px;
+                    overflow: hidden;
+                    margin-bottom: 0.3rem;
+                }
+                .credit-bar-fill {
+                    height: 100%;
+                    border-radius: 4px;
+                    transition: width 0.5s ease;
+                }
+                .credit-bar-labels {
+                    display: flex;
+                    justify-content: space-between;
+                    font-size: 0.75rem;
+                    color: rgba(255,255,255,0.8);
+                }
+
+
                 .card-footer {
                     display: flex;
                     gap: 2rem;
+                    border-top: 1px solid rgba(255,255,255,0.1);
+                    padding-top: 1rem;
                 }
 
                 .stat-item {
@@ -172,7 +237,7 @@ export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, mont
                 }
 
                 .stat-value {
-                    font-size: 1.2rem;
+                    font-size: 1.1rem;
                     font-weight: 600;
                 }
 

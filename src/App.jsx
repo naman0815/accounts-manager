@@ -23,6 +23,9 @@ function App() {
   // User Name State
   const [userName, setUserName] = useState('User');
 
+  // Persist selected account for balances view
+  const [selectedAccountId, setSelectedAccountId] = useState(null);
+
   // Date State
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -42,6 +45,10 @@ function App() {
         setShowSetup(true);
       } else if (loadedAccounts) {
         setAccounts(loadedAccounts);
+        // Initialize selected account if not set
+        if (!selectedAccountId && loadedAccounts.length > 0) {
+          setSelectedAccountId(loadedAccounts[0].id);
+        }
       }
 
       if (loadedTs) setTransactions(loadedTs);
@@ -160,6 +167,8 @@ function App() {
               onUpdateTransaction={handleUpdate}
               onDeleteTransaction={handleDelete}
               currentDate={currentDate}
+              selectedAccountId={selectedAccountId}
+              onSelectAccount={setSelectedAccountId}
             />
           </>
         )}

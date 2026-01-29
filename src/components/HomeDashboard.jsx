@@ -10,10 +10,12 @@ export function HomeDashboard({
     onAddTransaction,
     onDeleteTransaction,
     currentDate,
-    onUpdateTransaction
+    onUpdateTransaction,
+    selectedAccountId,
+    onSelectAccount
 }) {
-    // Determine active account (default to first)
-    const [selectedAccountId, setSelectedAccountId] = useState(accounts.length > 0 ? accounts[0].id : null);
+    // Determine active account (default to first) - Handled in parent now
+    // const [selectedAccountId, setSelectedAccountId] = useState(accounts.length > 0 ? accounts[0].id : null);
 
     // Filter transactions for this month
     const monthlyTransactions = useMemo(() => {
@@ -44,7 +46,7 @@ export function HomeDashboard({
             <BalanceCard
                 accounts={accounts}
                 selectedAccountId={selectedAccountId}
-                onSelectAccount={setSelectedAccountId}
+                onSelectAccount={onSelectAccount}
                 monthlyIncome={income}
                 monthlyExpense={expense}
             />
@@ -70,7 +72,7 @@ export function HomeDashboard({
 
             <style>{`
                 .home-dashboard {
-                    padding-bottom: 80px; /* Space for Bottom Nav */
+                    padding-bottom: 100px; /* Space for Bottom Nav */
                 }
                 .budget-summary {
                     padding: 1rem;
