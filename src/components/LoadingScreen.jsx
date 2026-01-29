@@ -8,7 +8,7 @@ export function LoadingScreen() {
                    2. Paste it into the "public" folder of this project.
                 */}
                 <img
-                    src={`/loading.gif?t=${Date.now()}`}
+                    src={`${import.meta.env.BASE_URL}loading.gif?t=${Date.now()}`}
                     alt="Loading..."
                     className="loading-gif"
                     onError={(e) => {
