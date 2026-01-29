@@ -219,6 +219,27 @@ export const StorageService = {
 
     // --- Investments ---
 
+    saveHolding: async (holding) => {
+        const apiUrl = StorageService.getApiUrl();
+        if (apiUrl) {
+            try {
+                await fetch(apiUrl, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'saveHolding', payload: holding }),
+                    headers: { 'Content-Type': 'text/plain' },
+                    redirect: 'follow',
+                    mode: 'no-cors'
+                });
+                // Invalidate local cache so next fetch gets new data
+                localStorage.removeItem(INVESTMENTS_KEY);
+            } catch (e) {
+                console.error("Save Holding Failed", e);
+                // For now, no local save support for holdings as they need Backend logic to be useful
+                throw e;
+            }
+        }
+    },
+
     fetchInvestments: async () => {
         const apiUrl = StorageService.getApiUrl();
         if (apiUrl) {

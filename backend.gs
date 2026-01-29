@@ -10,8 +10,6 @@ function doGet(e) {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     const result = {};
 
-    // --- EXISTING LOGIC ---
-    
     // 1. Get Transactions
     let sheet = ss.getSheetByName("Transactions");
     if (sheet && sheet.getLastRow() > 1) {
@@ -52,10 +50,7 @@ function doGet(e) {
       result.budgets = {};
     }
 
-    // --- NEW INVESTMENT LOGIC ---
-
     // 4. Get Investments
-    // We fetch prices if needed (lazy fetch on load)
     const investmentData = getInvestments(ss);
     result.investments = investmentData;
 
@@ -71,10 +66,6 @@ function doGet(e) {
 }
 
 function doPost(e) {
-  // ... (Keep existing doPost logic unchanged for brevity, unless new actions needed)
-  // Logic is same as before, check file for full content if needed.
-  // For safety, let's include the standard doPost skeleton to avoid breaking sync.
-  
   const lock = LockService.getScriptLock();
   lock.tryLock(10000);
 
@@ -111,6 +102,22 @@ function doPost(e) {
       const rows = Object.entries(payload).map(([k, v]) => [k, v]);
       if(rows.length > 0) sheet.getRange(2, 1, rows.length, 2).setValues(rows);
     }
+    // [NEW] Save Holding
+    else if (action === 'saveHolding') {
+      let sheet = ss.getSheetByName("Holdings");
+      if (!sheet) {
+        sheet = ss.insertSheet("Holdings");
+        sheet.appendRow(["AssetClass", "Identifier", "Exchange", "Quantity", "Metadata", "BuyPrice"]);
+      }
+      sheet.appendRow([
+        payload.assetClass, 
+        payload.identifier, 
+        payload.exchange || "", 
+        payload.quantity, 
+        JSON.stringify(payload.metadata || {}),
+        payload.buyPrice
+      ]);
+    }
 
     return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
       .setMimeType(ContentService.MimeType.JSON);
@@ -134,36 +141,34 @@ function getInvestments(ss) {
     holdSheet.appendRow(["AssetClass", "Identifier", "Exchange", "Quantity", "Metadata", "BuyPrice"]);
     // Sample Data
     holdSheet.appendRow(["MF", "120503", "", 100, "", 50]); // Axis Bluechip
-    holdSheet.appendRow(["STOCK", "RELIANCE", "NSE", 10, "", 2400]);
     return [];
   }
 
   const data = holdSheet.getDataRange().getValues();
-  const headers = data[0];
   const rows = data.slice(1);
-
   if (rows.length === 0) return [];
 
-  // 1. Parse Holdings
-  const holdings = rows.map(r => ({
-    assetClass: r[0],
-    identifier: r[1],
-    exchange: r[2],
-    quantity: Number(r[3]),
-    metadata: r[4] ? JSON.parse(r[4]) : {},
-    buyPrice: Number(r[5]) || 0
-  })).filter(h => h.identifier);
+  const holdings = rows.map(r => {
+    let meta = {};
+    try { meta = r[4] ? JSON.parse(r[4]) : {}; } catch(e) {}
+    return {
+      assetClass: r[0],
+      identifier: r[1],
+      exchange: r[2],
+      quantity: Number(r[3]),
+      metadata: meta,
+      buyPrice: Number(r[5]) || 0
+    };
+  }).filter(h => h.identifier);
 
-  // 2. Refresh Prices (if stale)
   const prices = fetchAndCachePrices(ss, holdings);
 
-  // 3. Combine
   return holdings.map(h => {
     let currentPrice = 0;
     let value = 0;
     let lastUpdated = "";
 
-    if (h.assetClass === 'MF' || h.assetClass === 'STOCK' || h.assetClass === 'GOLD') {
+    if (['MF', 'STOCK', 'GOLD'].includes(h.assetClass)) {
       const priceData = prices[h.identifier];
       if (priceData) {
         currentPrice = Number(priceData.price);
@@ -171,23 +176,14 @@ function getInvestments(ss) {
         value = currentPrice * h.quantity;
       }
     } else if (h.assetClass === 'EPF') {
-      // Logic: Start Balance + (Monthly * Months) + Interest
-      // Simplified: Just use Balance in metadata if simplistic, or formula
-      // User Req: "Calculate balance locally"
-      // Let's assume Metadata has { balance: 100000, monthly: 5000, last_date: "2023-01-01" }
       value = calculateEPF(h.metadata);
-      currentPrice = value; // Treat as lump sum
+      currentPrice = value;
     } else if (h.assetClass === 'PPF') {
       value = calculatePPF(h.metadata);
       currentPrice = value;
     }
 
-    return {
-      ...h,
-      currentPrice,
-      currentValue: value,
-      lastUpdated
-    };
+    return { ...h, currentPrice, currentValue: value, lastUpdated };
   });
 }
 
@@ -198,10 +194,8 @@ function fetchAndCachePrices(ss, holdings) {
     priceSheet.appendRow(["Identifier", "Price", "Date", "Source"]);
   }
 
-  // Read Cache
   const data = priceSheet.getDataRange().getValues();
   const cache = {};
-  // Skip header
   for(let i=1; i<data.length; i++) {
     cache[data[i][0]] = { price: data[i][1], date: data[i][2], source: data[i][3], row: i+1 };
   }
@@ -209,12 +203,9 @@ function fetchAndCachePrices(ss, holdings) {
   const today = new Date().toISOString().split('T')[0];
   const toFetch = [];
 
-  // Check what needs fetching
   holdings.forEach(h => {
     if (['MF', 'STOCK', 'GOLD'].includes(h.assetClass)) {
       const entry = cache[h.identifier];
-      // Fetch if missing OR old (not today)
-      // Note: Comparing string dates YYYY-MM-DD
       const entryDate = entry ? new Date(entry.date).toISOString().split('T')[0] : "";
       if (!entry || entryDate !== today) {
         toFetch.push(h);
@@ -224,7 +215,6 @@ function fetchAndCachePrices(ss, holdings) {
 
   if (toFetch.length === 0) return cache;
 
-  // FETCH LOGIC
   // 1. AMFI
   const mfs = toFetch.filter(h => h.assetClass === 'MF');
   if (mfs.length > 0) {
@@ -247,18 +237,14 @@ function fetchAndCachePrices(ss, holdings) {
     }
   });
 
-  // Re-read cache to return full list
-  // Optimization: Just update local cache object
   return cache; 
 }
 
 function updateCache(sheet, cache, id, price, date, source) {
   if (cache[id]) {
-    // Update Row
     sheet.getRange(cache[id].row, 2, 1, 3).setValues([[price, date, source]]);
     cache[id] = { price, date, source, row: cache[id].row };
   } else {
-    // Append
     sheet.appendRow([id, price, date, source]);
     cache[id] = { price, date, source, row: sheet.getLastRow() };
   }
@@ -294,7 +280,7 @@ function fetchAmfiData() {
 
 function fetchYahooPrice(symbol) {
   try {
-    // Use the chart API which is generally open
+    // Yahoo Finance Chart API is generally reliable for basic price checks
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=1d`;
     const response = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
     const json = JSON.parse(response.getContentText());
@@ -308,14 +294,11 @@ function fetchYahooPrice(symbol) {
 }
 
 function calculateEPF(meta) {
-  // meta: { balance: 100000, monthly: 5000, last_date: "2024-04-01", interest_rate: 0.0825 }
-  // Simple approximation logic
   if (!meta || !meta.balance) return 0;
-  return meta.balance + (meta.monthly || 0) * 12; // Placeholder
+  return meta.balance + (meta.monthly || 0) * 12; // Placeholder logic
 }
 
 function calculatePPF(meta) {
-  // Placeholder, user enters current value usually
   if (!meta || !meta.balance) return 0;
   return meta.balance;
 }
