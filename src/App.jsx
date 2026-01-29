@@ -8,30 +8,30 @@ import { AccountList } from './components/AccountList';
 import { Settings } from './components/Settings';
 import { LoadingScreen } from './components/LoadingScreen';
 import { InvestmentDashboard } from './components/InvestmentDashboard';
-import { UserCircle, TrendingUp, Wallet } from 'lucide-react';
+import { HomeDashboard } from './components/HomeDashboard';
+import { BottomNav } from './components/BottomNav';
+import { UserCircle, Bell, Settings as SettingsIcon } from 'lucide-react';
 
 function App() {
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState('expenses'); // 'expenses' | 'investments'
+  const [activeTab, setActiveTab] = useState('home'); // 'home' | 'analytics' | 'investments' | 'profile'
   const [transactions, setTransactions] = useState([]);
   const [accounts, setAccounts] = useState([]);
   const [budgets, setBudgets] = useState({});
   const [showSetup, setShowSetup] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
 
-  // Month State (default to current month)
+  // Date State
   const [currentDate, setCurrentDate] = useState(new Date());
 
   useEffect(() => {
     const loadData = async () => {
-      const minDelay = new Promise(resolve => setTimeout(resolve, 2500)); // Match 2.5s animation
+      const minDelay = new Promise(resolve => setTimeout(resolve, 2500));
 
-      // Parallel fetch for speed
       const [loadedAccounts, loadedTs, loadedBudgets] = await Promise.all([
         StorageService.fetchAccounts(),
         StorageService.fetchTransactions(),
         StorageService.fetchBudgets(),
-        StorageService.fetchInvestments(), // Prefetch investments
+        StorageService.fetchInvestments(),
         minDelay
       ]);
 
@@ -65,16 +65,9 @@ function App() {
   };
 
   const handleAdd = async (t) => {
-    // Default to first account if available
-    if (accounts.length > 0) {
-      t.accountId = accounts[0].id;
-    }
-
-    // Pass to storage
+    if (accounts.length > 0) t.accountId = accounts[0].id;
     const updated = await StorageService.saveTransaction(t);
     setTransactions(updated);
-
-    // Refresh accounts as balance changed
     const freshAccounts = await StorageService.fetchAccounts();
     setAccounts(freshAccounts);
   };
@@ -83,7 +76,6 @@ function App() {
     if (confirm('Are you sure you want to delete this?')) {
       const updated = await StorageService.deleteTransaction(id);
       setTransactions(updated);
-      // Refresh accounts
       const freshAccounts = await StorageService.fetchAccounts();
       setAccounts(freshAccounts);
     }
@@ -93,120 +85,92 @@ function App() {
     StorageService.exportData();
   };
 
-  const changeMonth = (offset) => {
-    const newDate = new Date(currentDate);
-    newDate.setMonth(newDate.getMonth() + offset);
-    setCurrentDate(newDate);
-  };
-
-  // Filter transactions by month
-  const filteredTransactions = useMemo(() => {
-    return transactions.filter(t => {
-      const tDate = new Date(t.date);
-      return tDate.getMonth() === currentDate.getMonth() &&
-        tDate.getFullYear() === currentDate.getFullYear();
-    });
-  }, [transactions, currentDate]);
-
-  const totalSpent = filteredTransactions
-    .filter(t => t.type !== 'income')
-    .reduce((acc, t) => acc + t.amount, 0);
-
-  const monthLabel = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
-
   if (showSetup) {
     return <AccountSetup onComplete={handleSetupComplete} />;
   }
+
+  // Header Component (Internal)
+  const Header = () => (
+    <header className="app-header" style={{
+      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      padding: '1rem 0', marginBottom: '1rem'
+    }}>
+      <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
+        <div style={{ width: '40px', height: '40px', background: '#e2e8f0', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <UserCircle size={24} color="#64748b" />
+        </div>
+        <div>
+          <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Welcome Back</div>
+          <div style={{ fontWeight: 600 }}>User</div>
+        </div>
+      </div>
+      <div>
+        <button className="btn-icon" style={{ position: 'relative' }}>
+          <Bell size={20} />
+          <span style={{ position: 'absolute', top: 0, right: 0, width: '8px', height: '8px', background: '#ef4444', borderRadius: '50%' }}></span>
+        </button>
+      </div>
+    </header>
+  );
 
   return (
     <div className="app-container">
       {loading && <LoadingScreen />}
 
-      <div className="container">
-        <header className="header">
-          <h1>Expense Tracker</h1>
-          <div className="header-actions">
-            <button onClick={handleExport} className="btn-icon" title="Export Data">
-              ⬇️
-            </button>
-            <button onClick={() => setShowSettings(true)} className="btn-icon" title="Settings">
-              <UserCircle size={20} />
-            </button>
-          </div>
-        </header>
+      <div className="container" style={{ paddingBottom: '80px' }}>
 
-        {/* View Switcher */}
-        <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem', background: '#e2e8f0', padding: '0.25rem', borderRadius: '12px' }}>
-          <button
-            onClick={() => setView('expenses')}
-            style={{
-              flex: 1,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-              padding: '0.75rem', borderRadius: '8px', border: 'none',
-              background: view === 'expenses' ? '#fff' : 'transparent',
-              color: view === 'expenses' ? '#0f172a' : '#64748b',
-              boxShadow: view === 'expenses' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-              fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s'
-            }}
-          >
-            <Wallet size={18} /> Expenses
-          </button>
-          <button
-            onClick={() => setView('investments')}
-            style={{
-              flex: 1,
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem',
-              padding: '0.75rem', borderRadius: '8px', border: 'none',
-              background: view === 'investments' ? '#fff' : 'transparent',
-              color: view === 'investments' ? '#0f172a' : '#64748b',
-              boxShadow: view === 'investments' ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-              fontWeight: 600, cursor: 'pointer', transition: 'all 0.2s'
-            }}
-          >
-            <TrendingUp size={18} /> Investments
-          </button>
-        </div>
-
-        {view === 'investments' ? (
-          <InvestmentDashboard />
-        ) : (
+        {/* Render Views based on Tab */}
+        {activeTab === 'home' && (
           <>
-            {/* Account Summary */}
-            <AccountList accounts={accounts} />
-
-            {/* Month Navigation */}
-            <div className="month-nav glass-panel" style={{ padding: '1rem' }}>
-              <button onClick={() => changeMonth(-1)} className="btn-icon">←</button>
-              <span className="month-label">{monthLabel}</span>
-              <button onClick={() => changeMonth(1)} className="btn-icon">→</button>
-            </div>
-
-            <div className="summary-card glass-panel">
-              <span className="label">Spent in {currentDate.toLocaleString('default', { month: 'long' })}</span>
-              <div className="total-amount">₹{totalSpent.toFixed(2)}</div>
-            </div>
-
-            <ExpenseInput onAdd={handleAdd} />
-
-            <TransactionList transactions={filteredTransactions} onDelete={handleDelete} />
-
-            {/* Spacing for Stats */}
-            <div style={{ marginTop: '3rem' }}>
-              <Stats transactions={filteredTransactions} budgets={budgets} />
-            </div>
+            <Header />
+            <HomeDashboard
+              accounts={accounts}
+              transactions={transactions}
+              budgets={budgets} // Will need to pass budgets
+              onAddTransaction={handleAdd}
+              onDeleteTransaction={handleDelete}
+              currentDate={currentDate}
+            />
           </>
         )}
+
+        {activeTab === 'analytics' && (
+          <div style={{ paddingTop: '1rem' }}>
+            <h2 style={{ marginBottom: '1rem' }}>Analytics</h2>
+            <Stats
+              transactions={transactions.filter(t => {
+                const d = new Date(t.date);
+                return d.getMonth() === currentDate.getMonth() && d.getFullYear() === currentDate.getFullYear();
+              })}
+              budgets={budgets}
+            />
+          </div>
+        )}
+
+        {activeTab === 'investments' && (
+          <div style={{ paddingTop: '1rem' }}>
+            <h2 style={{ marginBottom: '1rem' }}>Investments</h2>
+            <InvestmentDashboard />
+          </div>
+        )}
+
+        {activeTab === 'profile' && (
+          <div style={{ paddingTop: '1rem' }}>
+            <h2 style={{ marginBottom: '1rem' }}>Profile & Settings</h2>
+            <Settings
+              accounts={accounts}
+              onUpdateAccounts={handleUpdateAccounts}
+              budgets={budgets}
+              onUpdateBudgets={handleUpdateBudgets}
+              onClose={() => { }} // No close button needed in tab view
+              isTabView={true} // Add a prop to Settings to adjust layout if needed
+            />
+          </div>
+        )}
+
       </div>
 
-      {showSettings && (
-        <Settings
-          accounts={accounts}
-          onUpdateAccounts={handleUpdateAccounts}
-          budgets={budgets}
-          onUpdateBudgets={handleUpdateBudgets}
-          onClose={() => setShowSettings(false)}
-        />
-      )}
+      <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
     </div>
   );
 }
