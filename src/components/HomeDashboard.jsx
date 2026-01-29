@@ -9,7 +9,8 @@ export function HomeDashboard({
     budgets,
     onAddTransaction,
     onDeleteTransaction,
-    currentDate
+    currentDate,
+    onUpdateTransaction
 }) {
     // Determine active account (default to first)
     const [selectedAccountId, setSelectedAccountId] = useState(accounts.length > 0 ? accounts[0].id : null);
