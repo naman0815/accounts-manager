@@ -115,7 +115,7 @@ This app uses a Google Sheet as its database. No third-party servers involved.
 
 ## 🤝 Contributing
 
-Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+I made this shit using AI so idek what any of this means. But feel free to contribute.
 
 ## 📄 License
 
