@@ -84,6 +84,12 @@ export function Settings({ accounts, onUpdateAccounts, budgets, onUpdateBudgets,
                 >
                     Cloud Sync
                 </button>
+                <button
+                    className={`tab-btn ${activeTab === 'ai' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('ai')}
+                >
+                    AI Config
+                </button>
             </div>
 
             <div
@@ -256,6 +262,51 @@ export function Settings({ accounts, onUpdateAccounts, budgets, onUpdateBudgets,
                             Paste the <strong>Web App URL</strong> from your Google Apps Script deployment.
                             It must end in <code>/exec</code>.
                         </p>
+                    </div>
+                )}
+
+                {activeTab === 'ai' && (
+                    <div className="cloud-settings">
+                        <p className="hint-text">Configure your AI Assistant.</p>
+
+                        <div style={{ background: 'rgba(56, 189, 248, 0.1)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem' }}>
+                            <h4 style={{ margin: '0 0 0.5rem 0', color: '#38bdf8' }}>Option 1: Easy Setup (Direct)</h4>
+                            <p style={{ fontSize: '0.85rem', color: '#94a3b8', marginBottom: '1rem' }}>
+                                Just paste your Hugging Face Token. Browser will call HF directly.
+                            </p>
+                            <label>Hugging Face Token</label>
+                            <input
+                                type="password"
+                                className="input-base"
+                                placeholder="hf_..."
+                                defaultValue={localStorage.getItem('am_ai_token') || ''}
+                                onChange={(e) => {
+                                    const val = e.target.value.trim();
+                                    if (val) localStorage.setItem('am_ai_token', val);
+                                    else localStorage.removeItem('am_ai_token');
+                                }}
+                            />
+                            <p className="hint-text" style={{ marginTop: '0.5rem', fontSize: '0.8rem' }}>
+                                <a href="https://huggingface.co/settings/tokens" target="_blank" style={{ color: '#38bdf8' }}>Get a free token here (Read permission)</a>
+                            </p>
+                        </div>
+
+                        <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.5rem' }}>
+                            <h4 style={{ margin: '0 0 0.5rem 0', color: '#94a3b8' }}>Option 2: Advanced (Secure Proxy)</h4>
+                            <label>Worker URL</label>
+                            <input
+                                type="text"
+                                className="input-base"
+                                placeholder="https://..."
+                                defaultValue={localStorage.getItem('am_ai_url') || ''}
+                                onChange={(e) => {
+                                    const val = e.target.value.trim();
+                                    if (val) localStorage.setItem('am_ai_url', val);
+                                    else localStorage.removeItem('am_ai_url');
+                                }}
+                            />
+                            <p className="hint-text">Leave empty if using Option 1.</p>
+                        </div>
                     </div>
                 )}
             </div>

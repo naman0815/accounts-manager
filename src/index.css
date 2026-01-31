@@ -179,6 +179,11 @@ button {
   line-height: 1.5;
   overflow-y: hidden;
   font-family: inherit;
+  line-height: 1.5;
+  overflow-y: hidden;
+  font-family: inherit;
+  padding-right: 100px;
+  /* Space for Action Buttons */
 }
 
 /* Global Scrollbar Hide */
@@ -417,8 +422,9 @@ button {
 }
 
 .mic-btn {
-  position: absolute;
-  right: 12px;
+  /* Position handled by container now */
+  /* position: absolute; */
+  /* right: 12px; */
   background: none;
   border: none;
   color: var(--text-muted);
@@ -514,6 +520,16 @@ button {
   gap: 1rem;
   border-bottom: 1px solid var(--glass-border);
   margin-bottom: 1.5rem;
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+.tabs::-webkit-scrollbar {
+  display: none;
+  /* Chrome/Safari */
 }
 
 .tab-btn {
@@ -713,3 +729,150 @@ button {
   min-width: 150px;
   text-align: center;
 }
+
+/* AI Mode Styles */
+.input-wrapper.ai-mode .glass-panel {
+  border-color: rgba(244, 114, 182, 0.5);
+  box-shadow: 0 0 20px rgba(244, 114, 182, 0.2);
+}
+
+.input-wrapper.ai-mode .glass-panel:focus {
+  border-color: #f472b6;
+  box-shadow: 0 0 30px rgba(244, 114, 182, 0.3);
+}
+
+.mic-btn.active-ai {
+  color: #f472b6;
+  background: rgba(244, 114, 182, 0.1);
+}
+
+.ai-response-card {
+  animation: slideDown 0.3s ease-out;
+  border: 1px solid rgba(244, 114, 182, 0.3);
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+/* --- AI Chat Mode Overhaul (Phase 2) --- */
+
+/* The full-screen container for Chat Mode */
+.chat-mode-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  background: var(--bg-color);
+  display: flex;
+  flex-direction: column;
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* The dock at the bottom holding the input */
+.chat-input-dock {
+  padding: 1rem;
+  padding-bottom: 2rem;
+  background: linear-gradient(to top, var(--bg-color) 80%, transparent);
+  animation: slideUpDock 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 10002;
+}
+
+/* Animations */
+@keyframes slideUpDock {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Close Button */
+.chat-close-btn {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 10003;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  border: 1px solid rgba(255,255,255,0.1);
+  transition: all 0.2s;
+}
+.chat-close-btn:hover {
+  background: rgba(244, 114, 182, 0.2);
+  color: #f472b6;
+  border-color: #f472b6;
+}
+
+/* Chat Window Integration */
+.ai-chat-window {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6rem 1rem 1rem 1rem; /* Top padding for Close btn space */
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Message Bubbles */
+.chat-message {
+  display: flex;
+  gap: 1rem;
+  animation: msgFade 0.3s ease-out forwards;
+}
+.chat-message.user { justify-content: flex-end; }
+.message-content {
+  max-width: 85%;
+  padding: 1rem 1.2rem;
+  border-radius: 18px;
+  line-height: 1.6;
+  font-size: 1rem;
+}
+.chat-message.user .message-content {
+  background: var(--glass-bg); /* Use glass for user too to match theme */
+  border: 1px solid var(--glass-border);
+  color: var(--text-main);
+  border-bottom-right-radius: 4px;
+}
+.chat-message.ai .message-content {
+  background: rgba(244, 114, 182, 0.1); /* Pink tint for AI */
+  border: 1px solid rgba(244, 114, 182, 0.2);
+  color: var(--text-main);
+  border-bottom-left-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+@keyframes msgFade {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Streaming Cursor */
+.streaming-text::after {
+  content: '▋';
+  display: inline-block;
+  margin-left: 4px;
+  color: #f472b6;
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink { 50% { opacity: 0; } }

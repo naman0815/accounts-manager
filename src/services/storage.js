@@ -304,6 +304,42 @@ export const StorageService = {
         } catch (e) { return []; }
     },
 
+    // --- AI Features ---
+
+    getAiSettings: () => {
+        return {
+            url: localStorage.getItem('am_ai_url'),
+            token: localStorage.getItem('am_ai_token')
+        };
+    },
+
+    saveAiSettings: ({ url, token }) => {
+        if (url) localStorage.setItem('am_ai_url', url);
+        else localStorage.removeItem('am_ai_url');
+
+        if (token) localStorage.setItem('am_ai_token', token);
+        else localStorage.removeItem('am_ai_token');
+    },
+
+    getAllFinanceData: async () => {
+        // Prepare data for AI context
+        const transactions = await StorageService.fetchTransactions();
+        const accounts = await StorageService.fetchAccounts();
+        const budgets = await StorageService.fetchBudgets();
+        const investments = await StorageService.fetchInvestments();
+
+        return {
+            transactions,
+            accounts,
+            budgets,
+            investments,
+            meta: {
+                timestamp: new Date().toISOString(),
+                currency: 'INR'
+            }
+        };
+    },
+
     // --- Helpers ---
 
     updateLocalBalance: async (transaction, mode) => {
