@@ -1,5 +1,5 @@
 // ===== VERSION THIS ON EVERY DEPLOY =====
-const CACHE_VERSION = "v1"; // Antigravity must increment this each deploy
+const CACHE_VERSION = "v2"; // Antigravity must increment this each deploy
 const CACHE_NAME = `app-cache-${CACHE_VERSION}`;
 
 // Install – do not aggressively cache HTML
@@ -20,8 +20,17 @@ self.addEventListener("activate", (event) => {
 // Fetch – always go to network first
 self.addEventListener("fetch", (event) => {
     event.respondWith(
-        fetch(event.request, { cache: "no-store" }).catch(() =>
-            caches.match(event.request)
-        )
+        fetch(event.request, { cache: "no-store" })
+            .catch(() => caches.match(event.request))
+            .then((response) => {
+                if (!response) {
+                    return new Response("Offline - Service Unavailable", {
+                        status: 503,
+                        statusText: "Service Unavailable",
+                        headers: new Headers({ "Content-Type": "text/plain" }),
+                    });
+                }
+                return response;
+            })
     );
 });
