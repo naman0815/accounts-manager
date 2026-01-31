@@ -25,24 +25,18 @@ A modern, offline-first personal finance application inspired by the 'Fold' desi
 This application is designed to run directly in the browser without a backend server (Serverless).
 
 ### Deployment
-
 **Option 1: GitHub Pages (Recommended)**
-
 1.  Fork this repository.
 2.  Enable **GitHub Pages** in your repo settings (Settings > Pages).
 3.  Set the source branch to `gh-pages`. (This branch is created automatically after deployment).
 4.  Your app will be live at `https://your-username.github.io/accounts-manager/`.
-
 **Option 2: Local Development**
-
 If you want to modify the code:
-
 1.  Clone the repository:
     ```bash
     git clone https://github.com/naman0815/accounts-manager.git
     cd accounts-manager
     ```
-
 2.  Install dependencies & Run:
     ```bash
     npm install
