@@ -308,17 +308,13 @@ export const StorageService = {
 
     getAiSettings: () => {
         return {
-            url: localStorage.getItem('am_ai_url'),
-            token: localStorage.getItem('am_ai_token')
+            token: localStorage.getItem('am_hf_token')
         };
     },
 
-    saveAiSettings: ({ url, token }) => {
-        if (url) localStorage.setItem('am_ai_url', url);
-        else localStorage.removeItem('am_ai_url');
-
-        if (token) localStorage.setItem('am_ai_token', token);
-        else localStorage.removeItem('am_ai_token');
+    saveAiSettings: ({ token }) => {
+        if (token) localStorage.setItem('am_hf_token', token);
+        else localStorage.removeItem('am_hf_token');
     },
 
     getAllFinanceData: async () => {

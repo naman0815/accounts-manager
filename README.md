@@ -102,15 +102,17 @@ This app uses a Google Sheet as its database. No third-party servers involved.
     - Open Accounts Manager > **Settings** > **Cloud Sync**.
     - Paste the URL and click **Test**.
 ## 🤖 Enabling AI Features (Optional)
-You can chat with your finance data using AI. This requires a small backend to handle secure requests.
-### Option 1: One-Click Cloudflare Deploy (Recommended)
-Deploy the backend to your own Cloudflare account for free (no coding required).
-1.  **Click the button below**:
-    
-    [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/naman0815/accounts-manager)
-2.  Follow the steps to **Authorize** and **Deploy**.
-3.  Once deployed, copy your **Worker URL** (ends in `.workers.dev`).
-4.  In the App, go to **Settings > AI**, paste the URL, and your **Hugging Face Token**.
+### Client-Side AI (No Backend Required)
+This app communicates directly with Hugging Face's Inference API from your browser.
+
+1.  **Get a Token**:
+    - Go to [Hugging Face Settings > Tokens](https://huggingface.co/settings/tokens).
+    - Create a new token with **Read** permissions.
+2.  **Configure App**:
+    - Open Accounts Manager.
+    - Go to **Settings > AI Config**.
+    - Paste your token.
+    - Start using the Chat feature!
 ## 📱 Mobile Usage
 - The app is designed as a PWA.
 - On iOS (Safari): Tap `Share` > `Add to Home Screen`.

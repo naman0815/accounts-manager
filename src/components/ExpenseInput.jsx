@@ -77,17 +77,10 @@ export function ExpenseInput({ onAdd }) {
 
         try {
             const settings = StorageService.getAiSettings();
+            const token = settings.token;
 
-            let apiUrl = settings.url;
-            let authToken = settings.token;
-
-            // Direct Mode Fallback
-            if (!apiUrl && authToken) {
-                apiUrl = "https://router.huggingface.co/hf-inference/models/Qwen/Qwen2.5-7B-Instruct";
-            }
-
-            if (!apiUrl) {
-                alert("Please configure AI Settings first!");
+            if (!token) {
+                alert("Please add your Hugging Face Token in Settings!");
                 setIsTyping(false);
                 setIsLoadingAi(false);
                 return;
@@ -96,78 +89,64 @@ export function ExpenseInput({ onAdd }) {
             // Enter Chat Mode immediately
             setChatMode(true);
             setIsTyping(true);
-            setIsLoadingAi(false); // Fix bug: clear "legacy" loading immediately
-            setConversation(prev => [...prev, { role: 'user', content: input }]);
-            setInput(''); // Clear input for next question
+            setIsLoadingAi(false);
 
+            // Add user message to UI
+            const userMsg = { role: 'user', content: input };
+            setConversation(prev => [...prev, userMsg]);
+
+            // Context snapshot
             const financeData = await StorageService.getAllFinanceData();
+            setInput('');
 
-            const systemMessage = `You are a personal finance analyst AI.
-You must answer the user's question using ONLY the data provided from their Google Sheets (Requests for external knowledge should be politely declined).
+            // Initialize HF
+            const { HfInference } = await import("@huggingface/inference");
+            const hf = new HfInference(token);
 
-The data provided contains:
-- Expenses (Transactions)
-- Budgets (Category limits)
-- Accounts (Balances)
-- Investments (Holdings)
+            const systemPrompt = `You are a personal finance analyst AI.
+Answer based ONLY on the provided JSON data.
+
+Data:
+${JSON.stringify(financeData)}
 
 Rules:
-- Do not assume missing data.
-- If the answer is not present in the sheet data, say "Not available in your data".
-- Perform calculations when needed.
-- Give insights, summaries, and explanations clearly.
-- Be concise and friendly.`;
-
-            const userMessage = `User Question:
-${input}
-
-Finance Sheet Data (JSON):
-${JSON.stringify(financeData)}`;
+- Be concise, friendly, and helpful.
+- If data is missing, say so.
+- Format with Markdown.
+`;
 
             const messages = [
-                { role: "system", content: systemMessage },
-                { role: "user", content: userMessage }
+                { role: "system", content: systemPrompt },
+                { role: "user", content: userMsg.content }
             ];
 
-            const payload = {
+            // Create placeholder for assistant response
+            setConversation(prev => [...prev, { role: 'assistant', content: '' }]);
+
+            let fullText = '';
+
+            // Streaming Chat Completion
+            for await (const chunk of hf.chatCompletionStream({
                 model: "Qwen/Qwen2.5-7B-Instruct",
-                messages: messages, // Send full history? For now just the constructed prompt context + current question context
-                // Ideally we should append previous conversation to messages here for context. 
-                // But for V1, let's keep it simple: 1-shot QA styled as chat.
-                // Or better: Append `conversation` history excluding the latest user msg which is already in `messages` construction?
-                // Let's stick to the current logic which constructs a robust prompt each time.
+                messages: messages,
                 max_tokens: 1000,
-                stream: false
-            };
+                temperature: 0.5
+            })) {
+                if (chunk.choices && chunk.choices[0]?.delta?.content) {
+                    const chunkText = chunk.choices[0].delta.content;
+                    fullText += chunkText;
 
-            const response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': authToken ? `Bearer ${authToken}` : undefined
-                },
-                body: JSON.stringify(payload)
-            });
-
-            if (!response.ok) {
-                const errBody = await response.text();
-                // ... Error handling
-                throw new Error(errBody); // Simplified
+                    setConversation(prev => {
+                        const newConv = [...prev];
+                        const lastMsg = newConv[newConv.length - 1];
+                        if (lastMsg.role === 'assistant') {
+                            lastMsg.content = fullText;
+                        }
+                        return newConv;
+                    });
+                }
             }
 
-            const data = await response.json();
-
-            // Handle OpenAI Format
-            let answer = "";
-            if (data.choices && data.choices[0] && data.choices[0].message) {
-                answer = data.choices[0].message.content;
-            } else if (data.error) {
-                answer = `Error: ${data.error}`;
-            } else {
-                answer = JSON.stringify(data);
-            }
-
-            setConversation(prev => [...prev, { role: 'assistant', content: answer }]);
             setIsTyping(false);
 
         } catch (error) {

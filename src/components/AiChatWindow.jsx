@@ -35,45 +35,17 @@ export const AiChatWindow = ({ conversation, isTyping }) => {
 
 const ChatMessage = ({ message, isLast }) => {
     const isAi = message.role === 'assistant' || message.role === 'ai';
-    const [displayedContent, setDisplayedContent] = useState(isAi && isLast ? "" : message.content);
-    const [isStreaming, setIsStreaming] = useState(isAi && isLast);
 
-    // Streaming Logic
-    useEffect(() => {
-        if (!isAi || !isLast || !message.content) return;
-
-        // If it's already fully displayed (e.g. from history), skip streaming
-        if (displayedContent === message.content) {
-            setIsStreaming(false);
-            return;
-        }
-
-        let index = 0;
-        const fullText = message.content;
-
-        // Faster typing for long responses
-        const speed = fullText.length > 500 ? 5 : 15;
-
-        const interval = setInterval(() => {
-            if (index < fullText.length) {
-                setDisplayedContent((prev) => prev + fullText.charAt(index));
-                index++;
-            } else {
-                clearInterval(interval);
-                setIsStreaming(false);
-            }
-        }, speed);
-
-        return () => clearInterval(interval);
-    }, [message.content, isAi, isLast]);
+    // If it's AI and empty, it might be starting to stream.
+    // If we have content, just show it.
 
     return (
         <div className={`chat-message ${isAi ? 'ai' : 'user'}`}>
-            <div className={`message-content ${isStreaming ? 'streaming-text' : 'streaming-done'}`}>
+            <div className={`message-content`}>
                 {isAi ? (
-                    <ReactMarkdown>{displayedContent}</ReactMarkdown>
+                    <ReactMarkdown>{message.content}</ReactMarkdown>
                 ) : (
-                    displayedContent
+                    message.content
                 )}
             </div>
         </div>
