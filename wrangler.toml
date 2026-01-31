@@ -1,5 +1,5 @@
 name = "accounts-manager-ai"
-main = "worker.js"
+main = "workers/worker.js"
 compatibility_date = "2024-01-01"
 
 [observability]

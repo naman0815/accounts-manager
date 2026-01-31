@@ -92,7 +92,7 @@ Deploy the backend to your own Cloudflare account for free (no coding required).
 
 1.  **Click the button below**:
     
-    [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/naman0815/accounts-manager&subdirectory=workers)
+    [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/naman0815/accounts-manager)
 
 2.  Follow the steps to **Authorize** and **Deploy**.
 3.  Once deployed, copy your **Worker URL** (ends in `.workers.dev`).
