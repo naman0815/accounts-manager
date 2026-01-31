@@ -23,7 +23,7 @@ export function LoadingScreen() {
                     <p>Add <strong>loading.gif</strong> to the <strong>public</strong> folder</p>
                 </div>
 
-                <div className="loading-text">Syncing...</div>
+
             </div>
 
             <style>{`
@@ -56,14 +56,7 @@ export function LoadingScreen() {
                     border-radius: 12px;
                 }
 
-                .loading-text {
-                    font-weight: 700;
-                    color: #475569;
-                    font-size: 0.9rem;
-                    letter-spacing: 2px;
-                    text-transform: uppercase;
-                    opacity: 0.8;
-                }
+
             `}</style>
         </div>
     );

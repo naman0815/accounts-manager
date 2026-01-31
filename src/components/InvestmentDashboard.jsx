@@ -3,21 +3,10 @@ import { StorageService } from '../services/storage';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { AddInvestmentModal } from './AddInvestmentModal';
 
-export function InvestmentDashboard() {
-    const [investments, setInvestments] = useState([]);
-    const [loading, setLoading] = useState(true);
+export function InvestmentDashboard({ investments, onUpdate }) {
     const [showAddModal, setShowAddModal] = useState(false);
 
-    const loadInvestments = async () => {
-        setLoading(true);
-        const data = await StorageService.fetchInvestments();
-        setInvestments(data);
-        setLoading(false);
-    };
-
-    useEffect(() => {
-        loadInvestments();
-    }, []);
+    // Removed internal loadInvestments to rely on parent state for correct scroll logic syncing
 
     // Process Data for Chart
     const { totalValue, assetAllocation, groupedInvestments } = useMemo(() => {
@@ -50,7 +39,7 @@ export function InvestmentDashboard() {
     // Colors for Chart
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
-    if (loading && investments.length === 0) return <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center' }}>Loading Investments...</div>;
+    if (investments.length === 0 && !onUpdate) return <div className="glass-panel" style={{ padding: '2rem', textAlign: 'center' }}>Loading Investments...</div>;
 
     return (
         <div className="investment-dashboard">
@@ -146,9 +135,9 @@ export function InvestmentDashboard() {
             {showAddModal && (
                 <AddInvestmentModal
                     onClose={() => setShowAddModal(false)}
-                    onAdded={() => {
-                        // Refresh data
-                        loadInvestments();
+                    onAdded={async () => {
+                        // Refresh data via parent
+                        await onUpdate();
                     }}
                 />
             )}

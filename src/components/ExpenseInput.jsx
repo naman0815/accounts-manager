@@ -87,13 +87,23 @@ export function ExpenseInput({ onAdd }) {
     return (
         <form onSubmit={handleSubmit} className="input-section">
             <div className={`input-wrapper ${isListening ? 'listening' : ''}`}>
-                <input
-                    type="text"
+                <textarea
                     className={`expense-input glass-panel ${error ? 'shake-error' : ''}`}
-                    placeholder={isListening ? "Listening..." : "Type e.g. '25 for Lunch'"}
+                    placeholder={isListening ? "Listening..." : "Type Expenses"}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
-                    disabled={isSubmitting} // Disable input while submitting
+                    disabled={isSubmitting}
+                    rows={1}
+                    onInput={(e) => {
+                        e.target.style.height = 'auto';
+                        e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                    }}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            handleSubmit(e);
+                        }
+                    }}
                 />
                 <button
                     type="button"
@@ -105,7 +115,7 @@ export function ExpenseInput({ onAdd }) {
                     {isListening ? <MicOff size={20} /> : <Mic size={20} />}
                 </button>
             </div>
-            {isSubmitting && <div style={{ position: 'absolute', bottom: -20, right: 0, fontSize: '0.8rem', color: '#ccc' }}>Saving...</div>}
+            {/* 'Saving...' text removed as requested */}
         </form>
     );
 }

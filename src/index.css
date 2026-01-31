@@ -37,6 +37,14 @@ body {
   background-image:
     radial-gradient(circle at 15% 50%, rgba(56, 189, 248, 0.08), transparent 25%),
     radial-gradient(circle at 85% 30%, rgba(129, 140, 248, 0.08), transparent 25%);
+  touch-action: pan-y;
+  overflow-x: hidden;
+  width: 100%;
+}
+
+html {
+  overflow-x: hidden;
+  width: 100%;
 }
 
 * {
@@ -159,9 +167,18 @@ button {
   color: var(--text-main);
   outline: none;
   transition: all 0.3s ease;
+  background: var(--glass-bg);
+  /* Explicit background to fix transparency issues */
   /* Subtle persistent pink glow */
   box-shadow: 0 0 10px rgba(236, 72, 153, 0.1);
   border: 1px solid rgba(236, 72, 153, 0.1);
+
+  /* Textarea specific */
+  resize: none;
+  min-height: 52px;
+  line-height: 1.5;
+  overflow-y: hidden;
+  font-family: inherit;
 }
 
 /* Global Scrollbar Hide */

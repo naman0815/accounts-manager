@@ -123,7 +123,6 @@ export function AddInvestmentModal({ onClose, onAdded }) {
                                 <input
                                     value={identifier}
                                     onChange={(e) => setIdentifier(e.target.value)}
-                                    placeholder="e.g. 120503"
                                     required
                                 />
                                 <small style={{ color: '#64748b' }}>Find on AMFI website</small>
@@ -164,7 +163,6 @@ export function AddInvestmentModal({ onClose, onAdded }) {
                                 <input
                                     value={identifier}
                                     onChange={(e) => setIdentifier(e.target.value)}
-                                    placeholder={assetClass === 'GOLD' ? 'e.g. GOLDBEES' : 'e.g. RELIANCE'}
                                     required
                                 />
                             </div>

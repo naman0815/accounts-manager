@@ -12,10 +12,9 @@ export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, mont
     const balance = activeAccount ? activeAccount.balance : 0;
     const limit = activeAccount?.limit || 0;
 
-    // For Credit Cards: Balance is usually negative (debt). 
-    // "Used" = Math.abs(balance). 
-    // "Available" = Limit - Used.
-    const used = Math.abs(balance);
+    // For Credit Cards: "Used" starts from 0 for that month (sum of transactions)
+    // For other accounts, we show the absolute balance if needed, but CC is specific.
+    const used = isCredit ? monthlyExpense : Math.abs(balance);
     const utilization = limit > 0 ? (used / limit) * 100 : 0;
 
     // Censored string matches length of digits (approx)
@@ -49,7 +48,7 @@ export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, mont
                     <h2 className="balance-amount">
                         {showBalance
                             ? (isCredit
-                                ? `₹${used.toLocaleString()} / ₹${limit.toLocaleString()}`
+                                ? `₹${used.toLocaleString('en-IN')} / ₹${limit.toLocaleString('en-IN')}`
                                 : `₹${balance.toLocaleString('en-IN')}`)
                             : (isCredit
                                 ? `₹${"•".repeat(used.toString().length)} / ₹${"•".repeat(limit.toString().length)}`
@@ -80,7 +79,7 @@ export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, mont
                             </div>
                             <div className="credit-bar-labels">
                                 <span>{utilization.toFixed(0)}% Limit Used</span>
-                                <span>₹{(limit - used).toLocaleString()} Available</span>
+                                <span>₹{(limit - used).toLocaleString('en-IN')} Available</span>
                             </div>
                         </div>
 
@@ -98,7 +97,7 @@ export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, mont
                                 </div>
                                 <div className="credit-bar-labels">
                                     <span>Budget: {((monthlyExpense / budgets['Credit Card']) * 100).toFixed(0)}%</span>
-                                    <span>₹{(budgets['Credit Card'] - monthlyExpense).toLocaleString()} Left</span>
+                                    <span>₹{(budgets['Credit Card'] - monthlyExpense).toLocaleString('en-IN')} Left</span>
                                 </div>
                             </div>
                         )}

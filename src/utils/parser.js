@@ -34,6 +34,8 @@ const TAXONOMY = {
   ]
 };
 
+import { generateId } from './uuid';
+
 function classifyText(text) {
   const lowerText = text.toLowerCase();
 
@@ -128,7 +130,7 @@ export function parseExpense(input) {
     const finalTag = (category === "Others" && tag === "General") ? description : tag;
 
     return {
-      id: crypto.randomUUID(),
+      id: generateId(),
       amount,
       type,         // 'income' or 'expense'
       category,     // The broad category
@@ -146,15 +148,15 @@ export function parseMultipleExpenses(input) {
 
   // Split by comma or " and " (case insensitive)
   // Careful not to split decimals like 1,000 (though we generally expect 1000)
-  // Simple split by comma for now
-  const parts = input.split(/,| and /i);
+  // Split by comma, " and ", or NEWLINE (important for multi-line pastes)
+  const parts = input.split(/,| and |\n/i);
 
   const results = [];
   for (const part of parts) {
     const parsed = parseExpense(part);
     if (parsed) {
-      // Regenerate ID to ensure uniqueness if logic in parseExpense uses time-based/random seeds that might collide
-      parsed.id = crypto.randomUUID();
+      // Regenerate ID to ensure uniqueness
+      parsed.id = generateId();
       results.push(parsed);
     }
   }

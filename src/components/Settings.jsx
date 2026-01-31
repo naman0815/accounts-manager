@@ -86,7 +86,14 @@ export function Settings({ accounts, onUpdateAccounts, budgets, onUpdateBudgets,
                 </button>
             </div>
 
-            <div className="settings-body">
+            <div
+                className="settings-body"
+                style={{
+                    overflowY: activeTab === 'budgets' ? 'auto' : 'hidden',
+                    maxHeight: 'calc(100vh - 200px)', // Ensure it fits in viewport so internal scroll works
+                    paddingBottom: '100px' // Bottom padding to see last item
+                }}
+            >
                 {activeTab === 'profile' && (
                     <>
                         <div className="setting-row">
@@ -155,7 +162,7 @@ export function Settings({ accounts, onUpdateAccounts, budgets, onUpdateBudgets,
                 )}
 
                 {activeTab === 'accounts' && (
-                    <div className="account-list-edit">
+                    <div className="account-list-edit" style={{ overflowY: 'hidden', height: '100%' }}>
                         {accounts.map((acc, index) => (
                             <div key={acc.id} className="setting-row account-edit-row" style={{ flexWrap: 'wrap' }}>
                                 <div className="acc-info">
@@ -169,23 +176,22 @@ export function Settings({ accounts, onUpdateAccounts, budgets, onUpdateBudgets,
                                 </div>
                                 <div className="input-group">
                                     <span className="prefix">₹</span>
+                                    {/* If Credit Card, this input edits LIMIT. Else, it edits BALANCE. */}
                                     <input
                                         type="number"
-                                        value={acc.balance}
-                                        onChange={(e) => handleAccountChange(index, 'balance', parseFloat(e.target.value) || 0)}
+                                        value={(acc.type === 'Credit Card' || acc.type === 'credit') ? (acc.limit || '') : acc.balance}
+                                        onChange={(e) => {
+                                            const val = parseFloat(e.target.value) || 0;
+                                            if (acc.type === 'Credit Card' || acc.type === 'credit') {
+                                                handleAccountChange(index, 'limit', val);
+                                            } else {
+                                                handleAccountChange(index, 'balance', val);
+                                            }
+                                        }}
+                                        placeholder={(acc.type === 'Credit Card' || acc.type === 'credit') ? "Set Limit" : "Balance"}
                                     />
                                 </div>
-                                {acc.type === 'Credit Card' && (
-                                    <div className="input-group" style={{ marginTop: '0.5rem', width: '100%', borderColor: '#ec4899' }}>
-                                        <span className="prefix" style={{ fontSize: '0.8rem', marginRight: '0.5rem', color: '#ec4899' }}>Limit</span>
-                                        <input
-                                            type="number"
-                                            value={acc.limit || ''}
-                                            onChange={(e) => handleAccountChange(index, 'limit', parseFloat(e.target.value) || 0)}
-                                            placeholder="Credit Limit"
-                                        />
-                                    </div>
-                                )}
+                                {/* Removed separate Limit input block as requested */}
                             </div>
                         ))}
                     </div>
@@ -199,7 +205,6 @@ export function Settings({ accounts, onUpdateAccounts, budgets, onUpdateBudgets,
                         <div className="flex-center" style={{ gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
                             <input
                                 type="text"
-                                placeholder="https://script.google.com/..."
                                 className="input-base"
                                 style={{ flex: 1, minWidth: '200px' }}
                                 defaultValue={localStorage.getItem('am_api_url') || ''}

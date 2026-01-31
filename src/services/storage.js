@@ -233,6 +233,29 @@ export const StorageService = {
         return budgets;
     },
 
+    // --- Goals ---
+
+    fetchGoals: async () => {
+        const data = localStorage.getItem('am_goals');
+        return data ? JSON.parse(data) : [];
+    },
+
+    saveGoals: async (goals) => {
+        const apiUrl = StorageService.getApiUrl();
+        localStorage.setItem('am_goals', JSON.stringify(goals));
+
+        if (apiUrl) {
+            fetch(apiUrl, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'saveGoals', payload: goals }),
+                headers: { 'Content-Type': 'text/plain' },
+                redirect: 'follow',
+                mode: 'no-cors'
+            }).catch(e => console.error(e));
+        }
+        return goals;
+    },
+
     // --- Investments ---
 
     saveHolding: async (holding) => {

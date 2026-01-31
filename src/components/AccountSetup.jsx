@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { StorageService } from '../services/storage';
+import { generateId } from '../utils/uuid';
 
 export function AccountSetup({ onComplete }) {
     const [accounts, setAccounts] = useState([
-        { id: crypto.randomUUID(), name: 'HDFC Savings', type: 'savings', balance: 0 },
-        { id: crypto.randomUUID(), name: 'SBI Savings', type: 'savings', balance: 0 },
-        { id: crypto.randomUUID(), name: 'HDFC Credit Card', type: 'credit', balance: 0 }
+        { id: generateId(), name: 'HDFC Savings', type: 'savings', balance: 0 },
+        { id: generateId(), name: 'SBI Savings', type: 'savings', balance: 0 },
+        { id: generateId(), name: 'HDFC Credit Card', type: 'credit', balance: 0 }
     ]);
     const [isSaving, setIsSaving] = useState(false);
 
@@ -16,7 +17,7 @@ export function AccountSetup({ onComplete }) {
     };
 
     const handleAdd = () => {
-        setAccounts([...accounts, { id: crypto.randomUUID(), name: 'New Account', type: 'savings', balance: 0 }]);
+        setAccounts([...accounts, { id: generateId(), name: 'New Account', type: 'savings', balance: 0 }]);
     };
 
     const handleRemove = (index) => {
