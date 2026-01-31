@@ -30,7 +30,7 @@ This application is designed to run directly in the browser without a backend se
 
 1.  Fork this repository.
 2.  Enable **GitHub Pages** in your repo settings (Settings > Pages).
-3.  Set the source branch to `main`.
+3.  Set the source branch to `gh-pages`. (This branch is created automatically after deployment).
 4.  Your app will be live at `https://your-username.github.io/accounts-manager/`.
 
 **Option 2: Local Development**
