@@ -122,6 +122,21 @@ export function Settings({ accounts, onUpdateAccounts, budgets, onUpdateBudgets,
                 {activeTab === 'budgets' && (
                     <div className="budget-list">
                         <p className="hint-text">Set your monthly limit for each category.</p>
+
+                        {/* Credit Card Budget Special Field */}
+                        <div className="setting-row" style={{ borderBottom: '1px solid #334155', marginBottom: '1rem', paddingBottom: '1rem' }}>
+                            <label style={{ color: '#f472b6' }}>Credit Card Budget</label>
+                            <div className="input-group" style={{ borderColor: '#f472b6' }}>
+                                <span className="prefix">₹</span>
+                                <input
+                                    type="number"
+                                    value={budgets['Credit Card'] || ''}
+                                    onChange={(e) => handleBudgetChange('Credit Card', e.target.value)}
+                                    placeholder="0"
+                                />
+                            </div>
+                        </div>
+
                         {CATEGORIES.map(cat => (
                             <div key={cat} className="setting-row">
                                 <label>{cat}</label>

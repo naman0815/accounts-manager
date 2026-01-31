@@ -64,7 +64,7 @@ export function TransactionList({ transactions, onDelete, accounts = [], onUpdat
                                 })}
                             </span>
                         </div>
-                        <div className="t-right" style={{ textAlign: 'right' }}>
+                        <div className="t-right" style={{ textAlign: 'left' }}>
                             <span className={`t-amount ${t.type === 'income' ? 'amt-income' : 'amt-expense'}`}>
                                 ₹{t.amount.toFixed(2)}
                             </span>

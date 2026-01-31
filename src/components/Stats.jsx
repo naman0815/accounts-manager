@@ -32,10 +32,13 @@ export function Stats({ transactions, budgets }) {
 
     if (data.length === 0) return null;
 
+    // Dynamic height calculation: 60px per item + 50px buffer
+    const chartHeight = Math.max(data.length * 60, 300);
+
     return (
         <div className="stats-container glass-panel">
             <h3>Spend vs Budget</h3>
-            <div style={{ width: '100%', height: 400 }}>
+            <div style={{ width: '100%', height: chartHeight }}>
                 <ResponsiveContainer>
                     <BarChart
                         data={data}
@@ -47,8 +50,8 @@ export function Stats({ transactions, budgets }) {
                         <YAxis
                             dataKey="name"
                             type="category"
-                            width={90}
-                            tick={{ fill: '#94a3b8', fontSize: 11 }}
+                            width={110}
+                            tick={{ fill: '#94a3b8', fontSize: 11, width: 100 }}
                             interval={0}
                         />
                         <Tooltip
@@ -73,9 +76,10 @@ export function Stats({ transactions, budgets }) {
                                 />
                             ))}
                         </Bar>
+
                     </BarChart>
                 </ResponsiveContainer>
             </div>
-        </div>
+        </div >
     );
 }

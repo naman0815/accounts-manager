@@ -83,9 +83,25 @@ export const StorageService = {
         }
 
         let transactions = StorageService.fetchTransactionsLocal();
-        const updatedTs = [transaction, ...transactions];
+        const existingIndex = transactions.findIndex(t => t.id === transaction.id);
+
+        let updatedTs;
+        if (existingIndex >= 0) {
+            // Update existing
+            const oldTransaction = transactions[existingIndex];
+            // Revert balance change of old transaction first if account changed or amount changed
+            await StorageService.updateLocalBalance(oldTransaction, 'remove');
+
+            updatedTs = [...transactions];
+            updatedTs[existingIndex] = transaction;
+        } else {
+            // Add new
+            updatedTs = [transaction, ...transactions];
+        }
 
         localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedTs));
+
+        // Add balance change for new/updated transaction
         if (transaction.accountId) {
             await StorageService.updateLocalBalance(transaction, 'add');
         }

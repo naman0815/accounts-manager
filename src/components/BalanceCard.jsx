@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { ChevronDown, Eye, EyeOff, TrendingUp, TrendingDown } from 'lucide-react';
 
-export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, monthlyIncome, monthlyExpense }) {
+export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, monthlyIncome, monthlyExpense, budgets }) {
     const [showBalance, setShowBalance] = useState(true);
 
     // Filter accounts if type is specified (e.g. for only CC view if needed, but generic here)
@@ -64,28 +64,48 @@ export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, mont
                 </div>
 
                 {/* Credit Check Bar (Only for Credit Cards) */}
-                {isCredit && limit > 0 && (
+                {/* Credit Cards: Show Budget Bar if budget exists, else Show Credit Utilization */}
+                {isCredit && (
                     <div className="credit-bar-container">
-                        <div className="credit-bar-bg">
-                            <div
-                                className="credit-bar-fill"
-                                style={{
-                                    width: `${Math.min(utilization, 100)}%`,
-                                    background: utilization > 90 ? '#ef4444' : utilization > 50 ? '#f59e0b' : '#10b981'
-                                }}
-                            ></div>
+                        {/* 1. Credit Limit Utilization Bar */}
+                        <div style={{ marginBottom: budgets?.['Credit Card'] ? '1rem' : '0' }}>
+                            <div className="credit-bar-bg">
+                                <div
+                                    className="credit-bar-fill"
+                                    style={{
+                                        width: `${Math.min(utilization, 100)}%`,
+                                        background: utilization > 90 ? '#ef4444' : utilization > 50 ? '#f59e0b' : '#38bdf8'
+                                    }}
+                                ></div>
+                            </div>
+                            <div className="credit-bar-labels">
+                                <span>{utilization.toFixed(0)}% Limit Used</span>
+                                <span>₹{(limit - used).toLocaleString()} Available</span>
+                            </div>
                         </div>
-                        <div className="credit-bar-labels">
-                            <span>{utilization.toFixed(0)}% Used</span>
-                            <span>₹{(limit - used).toLocaleString()} Available</span>
-                        </div>
+
+                        {/* 2. Monthly Budget Bar (If set) */}
+                        {budgets?.['Credit Card'] > 0 && (
+                            <div>
+                                <div className="credit-bar-bg" style={{ background: 'rgba(255,255,255,0.1)' }}>
+                                    <div
+                                        className="credit-bar-fill"
+                                        style={{
+                                            width: `${Math.min((monthlyExpense / budgets['Credit Card']) * 100, 100)}%`,
+                                            background: (monthlyExpense / budgets['Credit Card']) > 1 ? '#ef4444' : '#10b981'
+                                        }}
+                                    ></div>
+                                </div>
+                                <div className="credit-bar-labels">
+                                    <span>Budget: {((monthlyExpense / budgets['Credit Card']) * 100).toFixed(0)}%</span>
+                                    <span>₹{(budgets['Credit Card'] - monthlyExpense).toLocaleString()} Left</span>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
 
-            {/* Bottom: Income vs Expense (Hide for CC if desired, or keep?) -> User said "cant see budget indicator bar... Only for credit card". 
-               Let's keep Income/Expense for all as it's useful context (Month's inflow/outflow). 
-            */}
             <div className="card-footer">
                 <div className="stat-item">
                     <div className="stat-label">
@@ -243,6 +263,8 @@ export function BalanceCard({ accounts, selectedAccountId, onSelectAccount, mont
 
                 .icon-up { color: #4ade80; }
                 .icon-down { color: #f87171; }
+
+
             `}</style>
         </div>
     );

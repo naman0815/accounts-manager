@@ -159,6 +159,9 @@ button {
   color: var(--text-main);
   outline: none;
   transition: all 0.3s ease;
+  /* Subtle persistent pink glow */
+  box-shadow: 0 0 10px rgba(236, 72, 153, 0.1);
+  border: 1px solid rgba(236, 72, 153, 0.1);
 }
 
 /* Global Scrollbar Hide */
@@ -172,8 +175,9 @@ button {
 }
 
 .expense-input:focus {
-  /* No outline, just subtle shadow */
-  box-shadow: 0 0 15px rgba(236, 72, 153, 0.25);
+  /* Stronger Pink Glow */
+  box-shadow: 0 0 20px rgba(236, 72, 153, 0.4), 0 0 10px rgba(236, 72, 153, 0.2);
+  border-color: rgba(236, 72, 153, 0.5);
 }
 
 .shake-error {

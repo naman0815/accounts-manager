@@ -8,146 +8,10 @@ import { AccountList } from './components/AccountList';
 import { Settings } from './components/Settings';
 import { LoadingScreen } from './components/LoadingScreen';
 import { InvestmentDashboard } from './components/InvestmentDashboard';
-import { HomeDashboard } from './components/HomeDashboard';
-import { BottomNav } from './components/BottomNav';
-import { UserCircle, Bell, Settings as SettingsIcon } from 'lucide-react';
+import { MonthSelector } from './components/MonthSelector';
 
 function App() {
-  const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('home'); // 'home' | 'analytics' | 'investments' | 'profile'
-  const [transactions, setTransactions] = useState([]);
-  const [accounts, setAccounts] = useState([]);
-  const [budgets, setBudgets] = useState({});
-  const [showSetup, setShowSetup] = useState(false);
-
-  // User Name State
-  const [userName, setUserName] = useState('User');
-
-  // Persist selected account for balances view
-  const [selectedAccountId, setSelectedAccountId] = useState(null);
-
-  // Date State
-  const [currentDate, setCurrentDate] = useState(new Date());
-
-  useEffect(() => {
-    const loadData = async () => {
-      const minDelay = new Promise(resolve => setTimeout(resolve, 2500));
-
-      const [loadedAccounts, loadedTs, loadedBudgets] = await Promise.all([
-        StorageService.fetchAccounts(),
-        StorageService.fetchTransactions(),
-        StorageService.fetchBudgets(),
-        StorageService.fetchInvestments(),
-        minDelay
-      ]);
-
-      if (loadedAccounts && loadedAccounts.length === 0) {
-        setShowSetup(true);
-      } else if (loadedAccounts) {
-        setAccounts(loadedAccounts);
-        // Initialize selected account if not set
-        if (!selectedAccountId && loadedAccounts.length > 0) {
-          setSelectedAccountId(loadedAccounts[0].id);
-        }
-      }
-
-      if (loadedTs) setTransactions(loadedTs);
-      if (loadedBudgets) setBudgets(loadedBudgets);
-
-      // Load Username
-      const savedName = localStorage.getItem('am_user_name');
-      if (savedName) setUserName(savedName);
-
-      setLoading(false);
-    };
-    loadData();
-
-    // Listen for name changes from Settings component
-    const handleStorageChange = () => {
-      const savedName = localStorage.getItem('am_user_name');
-      if (savedName) setUserName(savedName);
-    };
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-
-  }, []);
-
-  const handleSetupComplete = async (newAccounts) => {
-    await StorageService.saveAccounts(newAccounts);
-    setAccounts(newAccounts);
-    setShowSetup(false);
-  };
-
-  const handleUpdateAccounts = async (updatedAccounts) => {
-    setAccounts(updatedAccounts);
-    await StorageService.saveAccounts(updatedAccounts);
-  };
-
-  const handleUpdateBudgets = async (updatedBudgets) => {
-    setBudgets(updatedBudgets);
-    await StorageService.saveBudgets(updatedBudgets);
-  };
-
-  const handleUpdate = async (t) => {
-    const updated = await StorageService.saveTransaction(t);
-    setTransactions(updated);
-    const freshAccounts = await StorageService.fetchAccounts();
-    setAccounts(freshAccounts);
-  };
-
-  const handleAdd = async (t) => {
-    // Default Account Logic
-    if (!t.accountId) {
-      const def = localStorage.getItem('am_default_account');
-      // Verify account still exists
-      if (def && accounts.find(a => a.id === def)) {
-        t.accountId = def;
-      } else if (accounts.length > 0) {
-        t.accountId = accounts[0].id;
-      }
-    }
-
-    const updated = await StorageService.saveTransaction(t);
-    setTransactions(updated);
-    const freshAccounts = await StorageService.fetchAccounts();
-    setAccounts(freshAccounts);
-  };
-
-  const handleDelete = async (id) => {
-    if (confirm('Are you sure you want to delete this?')) {
-      const updated = await StorageService.deleteTransaction(id);
-      setTransactions(updated);
-      const freshAccounts = await StorageService.fetchAccounts();
-      setAccounts(freshAccounts);
-    }
-  };
-
-  const handleExport = () => {
-    StorageService.exportData();
-  };
-
-  if (showSetup) {
-    return <AccountSetup onComplete={handleSetupComplete} />;
-  }
-
-  // Header Component
-  const Header = () => (
-    <header className="app-header" style={{
-      display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-      padding: '1rem 0', marginBottom: '0.5rem'
-    }}>
-      <div style={{ display: 'flex', gap: '0.8rem', alignItems: 'center' }}>
-        {/* Removed Profile Icon as requested */}
-        <div>
-          <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Welcome Back,</div>
-          <div style={{ fontWeight: 600, fontSize: '1.2rem' }}>{userName}</div>
-        </div>
-      </div>
-      <div>
-        {/* Notification Icon Removed */}
-      </div>
-    </header>
-  );
+  // ... (previous code)
 
   return (
     <div className="app-container">
@@ -159,6 +23,8 @@ function App() {
         {activeTab === 'home' && (
           <>
             <Header />
+            <MonthSelector currentDate={currentDate} onMonthChange={setCurrentDate} />
+
             <HomeDashboard
               accounts={accounts}
               transactions={transactions}
@@ -176,6 +42,7 @@ function App() {
         {activeTab === 'analytics' && (
           <div style={{ paddingTop: '1rem' }}>
             <h2 style={{ marginBottom: '1rem' }}>Analytics</h2>
+            <MonthSelector currentDate={currentDate} onMonthChange={setCurrentDate} />
             <Stats
               transactions={transactions.filter(t => {
                 const d = new Date(t.date);

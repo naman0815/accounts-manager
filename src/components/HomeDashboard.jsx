@@ -49,6 +49,7 @@ export function HomeDashboard({
                 onSelectAccount={onSelectAccount}
                 monthlyIncome={income}
                 monthlyExpense={expense}
+                budgets={budgets}
             />
 
 
