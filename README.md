@@ -54,21 +54,39 @@ This app uses a Google Sheet as its database. No third-party servers involved.
         const action = data.action;
         const ss = SpreadsheetApp.getActiveSpreadsheet();
         
+        // --- AI PROXY ---
+        if (action === 'chat') {
+             const hfToken = data.token;
+             const payload = data.payload;
+             
+             const options = {
+                 "method": "post",
+                 "headers": {
+                     "Authorization": "Bearer " + hfToken,
+                     "Content-Type": "application/json"
+                 },
+                 "payload": JSON.stringify(payload),
+                 "muteHttpExceptions": true
+             };
+             
+             // Call Hugging Face via Google Servers (No CORS issues)
+             const response = UrlFetchApp.fetch("https://router.huggingface.co/v1/chat/completions", options);
+             return ContentService.createTextOutput(response.getContentText());
+        }
+        // --- DATABASE ACTIONS ---
         if (action === 'saveTransaction') {
-             // Logic to append transaction to 'Transactions' sheet
-             // (See full implementation in docs or source)
+             // ... existing transaction logic
         } 
-        // ... handle saveAccounts, saveGoals, etc.
         
         return ContentService.createTextOutput("Success");
       } catch (e) {
-        return ContentService.createTextOutput("Error: " + e.toString());
+        return ContentService.createTextOutput(JSON.stringify({ error: e.toString() }));
       } finally {
         lock.releaseLock();
       }
     }
     function doGet(e) {
-       // Logic to fetch all data
+       // ... fetch logic
     }
     ```
     > **Note**: For the full, up-to-date Google Apps Script code, please check `backend/Code.gs` (create this file if you wish to version control your backend logic) or refer to the integration instructions provided during development.
@@ -84,16 +102,12 @@ This app uses a Google Sheet as its database. No third-party servers involved.
     - Open Accounts Manager > **Settings** > **Cloud Sync**.
     - Paste the URL and click **Test**.
 ## 🤖 Enabling AI Features (Optional)
-
 You can chat with your finance data using AI. This requires a small backend to handle secure requests.
-
 ### Option 1: One-Click Cloudflare Deploy (Recommended)
 Deploy the backend to your own Cloudflare account for free (no coding required).
-
 1.  **Click the button below**:
     
     [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/naman0815/accounts-manager)
-
 2.  Follow the steps to **Authorize** and **Deploy**.
 3.  Once deployed, copy your **Worker URL** (ends in `.workers.dev`).
 4.  In the App, go to **Settings > AI**, paste the URL, and your **Hugging Face Token**.
