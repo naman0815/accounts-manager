@@ -237,7 +237,12 @@ export function Settings({ accounts, onUpdateAccounts, budgets, onUpdateBudgets,
                                     btn.disabled = true;
 
                                     try {
-                                        const res = await fetch(`${url}?action=getData`, { redirect: 'follow', mode: 'cors' });
+                                        // Added method: 'GET' explicitly
+                                        const res = await fetch(`${url}?action=getData`, {
+                                            method: 'GET',
+                                            redirect: 'follow',
+                                            mode: 'cors'
+                                        });
                                         if (res.ok) {
                                             const data = await res.json();
                                             console.log(data);
@@ -247,7 +252,7 @@ export function Settings({ accounts, onUpdateAccounts, budgets, onUpdateBudgets,
                                         }
                                     } catch (err) {
                                         console.error(err);
-                                        alert("❌ Connection Failed.\n" + err.message + "\n\n1. Check URL ends in /exec\n2. Check permission is 'Anyone'");
+                                        alert("❌ Connection Failed.\n" + err.message + "\n\n1. Check URL ends in /exec\n2. Check permission is 'Anyone'\n3. If using multiple Google accounts, try Incognito.");
                                     } finally {
                                         btn.innerText = "Test";
                                         btn.disabled = false;
@@ -255,6 +260,49 @@ export function Settings({ accounts, onUpdateAccounts, budgets, onUpdateBudgets,
                                 }}
                             >
                                 Test
+                            </button>
+
+                            <button
+                                className="primary-btn"
+                                style={{ padding: '0.8rem', minWidth: '120px', background: '#ec4899', borderColor: '#ec4899' }}
+                                onClick={async (e) => {
+                                    if (!confirm("Overwrite cloud balances with current local balances?")) return;
+
+                                    const btn = e.target;
+                                    const url = localStorage.getItem('am_api_url');
+
+                                    if (!url) {
+                                        alert("Please enter a URL first.");
+                                        return;
+                                    }
+
+                                    btn.innerText = "Writing...";
+                                    btn.disabled = true;
+
+                                    try {
+                                        // Using no-cors here is safer for write operations as we don't need to read the response logic
+                                        // and often GAS doesn't return proper CORS headers for POSTs in some configs.
+                                        await fetch(url, {
+                                            method: 'POST',
+                                            body: JSON.stringify({ action: 'saveAccounts', payload: accounts }),
+                                            headers: { 'Content-Type': 'text/plain' },
+                                            redirect: 'follow',
+                                            mode: 'no-cors'
+                                        });
+
+                                        // Since mode is no-cors, we won't get a readable response or status code 200 reliably.
+                                        // We assume success if no network error occurred.
+                                        alert("✅ Data Sent!\n\nBalances have been pushed to the cloud.\nCheck your Google Sheet to verify.");
+                                    } catch (err) {
+                                        console.error(err);
+                                        alert("❌ Write Failed.\n" + err.message);
+                                    } finally {
+                                        btn.innerText = "Write Balances";
+                                        btn.disabled = false;
+                                    }
+                                }}
+                            >
+                                Write Balances
                             </button>
                         </div>
 
