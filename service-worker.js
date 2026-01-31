@@ -1,5 +1,5 @@
 // ===== VERSION THIS ON EVERY DEPLOY =====
-const CACHE_VERSION = "v2"; // Antigravity must increment this each deploy
+const CACHE_VERSION = "v3"; // Antigravity must increment this each deploy
 const CACHE_NAME = `app-cache-${CACHE_VERSION}`;
 
 // Install – do not aggressively cache HTML
@@ -19,6 +19,12 @@ self.addEventListener("activate", (event) => {
 
 // Fetch – always go to network first
 self.addEventListener("fetch", (event) => {
+    // IGNORE Google Apps Script and other external API calls
+    if (event.request.url.includes("script.google.com") ||
+        event.request.url.includes("script.googleusercontent.com")) {
+        return; // Return nothing to let the browser handle it naturally
+    }
+
     event.respondWith(
         fetch(event.request, { cache: "no-store" })
             .catch(() => caches.match(event.request))
